@@ -1,0 +1,193 @@
+---
+title: Room Settings
+---
+
+Room settings control the behavior and permissions of a meeting room. Settings are configured when creating a room and can be updated by the host at any time.
+
+## Settings Overview
+
+Room settings are stored in the `RoomSettings` model and are automatically created when a room is created. The settings object is always included when retrieving room information.
+
+## Available Settings
+
+<ParamField body="allowChat" type="boolean" default={true}>
+  Enable or disable chat functionality in the room. When disabled, participants cannot send or receive chat messages.
+</ParamField>
+
+<ParamField body="allowScreenShare" type="boolean" default={true}>
+  Enable or disable screen sharing for participants. When disabled, only the host can share their screen.
+</ParamField>
+
+<ParamField body="allowGuestAccess" type="boolean" default={true}>
+  Allow or prevent guests from joining without authentication. When disabled, all participants must be authenticated users.
+</ParamField>
+
+<ParamField body="waitingRoom" type="boolean" default={false}>
+  Enable waiting room feature. When enabled, participants must wait for host approval before joining the room.
+</ParamField>
+
+<ParamField body="muteParticipantsOnJoin" type="boolean" default={false}>
+  Automatically mute participants when they join the room. Participants can unmute themselves unless restricted.
+</ParamField>
+
+<ParamField body="maxParticipants" type="integer" default={100}>
+  Maximum number of participants allowed in the room.
+  - Minimum: 2
+  - Maximum: 100
+  - Can be set lower during room creation (via `maxParticipants` in CreateRoomDto)
+</ParamField>
+
+## Room Lock Status
+
+The `isLocked` field is stored on the Room model, not in RoomSettings, but can be updated via the settings endpoint.
+
+<ParamField body="isLocked" type="boolean" default={false}>
+  Lock the room to prevent new participants from joining. Existing participants remain in the room.
+</ParamField>
+
+## Setting Settings at Creation
+
+When creating a room, you can specify initial settings:
+
+```bash
+curl -X POST https://api.neuronmeet.com/rooms \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Private Meeting",
+    "waitingRoom": true,
+    "maxParticipants": 10
+  }'
+```
+
+Note: Only `waitingRoom` and `maxParticipants` can be set during creation. Other settings use default values and must be updated via the update endpoint.
+
+## Updating Settings
+
+To update room settings, use the PATCH endpoint:
+
+```bash
+curl -X PATCH https://api.neuronmeet.com/rooms/clx1a2b3c4d5e6f7g8h9i0j/settings \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "allowChat": false,
+    "allowScreenShare": true,
+    "waitingRoom": false,
+    "isLocked": true
+  }'
+```
+
+See [Update Room Settings](/api/rooms/update) for full documentation.
+
+## Settings Response Structure
+
+When retrieving room information, settings are included in the response:
+
+```json
+{
+  "id": "clx1a2b3c4d5e6f7g8h9i0j",
+  "code": "abc-def-ghi",
+  "name": "Team Standup",
+  "isLocked": false,
+  "settings": {
+    "id": "clx2a3b4c5d6e7f8g9h0i1j",
+    "roomId": "clx1a2b3c4d5e6f7g8h9i0j",
+    "allowChat": true,
+    "allowScreenShare": true,
+    "allowGuestAccess": true,
+    "waitingRoom": false,
+    "muteParticipantsOnJoin": false,
+    "maxParticipants": 100
+  }
+}
+```
+
+## Settings Behavior
+
+### Chat Control
+
+When `allowChat` is set to `false`:
+- Existing chat messages remain visible
+- New messages cannot be sent
+- Chat input is disabled for all participants
+
+### Screen Share Control
+
+When `allowScreenShare` is set to `false`:
+- Host can still share screen
+- Participants cannot initiate screen sharing
+- Ongoing screen shares from participants are terminated
+
+### Waiting Room Flow
+
+When `waitingRoom` is enabled:
+1. Participants join and enter waiting room
+2. Host receives notification of waiting participants
+3. Host can admit individual participants or all at once
+4. Admitted participants join the main room
+
+### Guest Access Control
+
+When `allowGuestAccess` is set to `false`:
+- Guest join attempts are rejected
+- Only authenticated users can join
+- Existing guests in the room remain connected
+
+### Room Lock
+
+When `isLocked` is set to `true`:
+- No new participants can join (both authenticated and guests)
+- Existing participants remain in the room
+- Room code becomes invalid for new joins
+- Host can unlock the room at any time
+
+## Capacity Management
+
+The `maxParticipants` setting enforces room capacity:
+- Join attempts when room is full return a 400 error
+- Host is counted as a participant
+- Participants who left are not counted
+- Setting can be updated while room is active
+- Cannot set below current participant count
+
+## Default Settings Template
+
+When a room is created without specifying settings, these defaults are used:
+
+```json
+{
+  "allowChat": true,
+  "allowScreenShare": true,
+  "allowGuestAccess": true,
+  "waitingRoom": false,
+  "muteParticipantsOnJoin": false,
+  "maxParticipants": 100
+}
+```
+
+## Best Practices
+
+### For Public Meetings
+- Enable `waitingRoom` for security
+- Keep `allowGuestAccess` enabled
+- Set reasonable `maxParticipants` limit
+- Consider enabling `muteParticipantsOnJoin`
+
+### For Private Meetings
+- Disable `allowGuestAccess`
+- Enable `waitingRoom` for extra security
+- Set lower `maxParticipants` limit
+- Lock room when all expected participants have joined
+
+### For Webinars/Presentations
+- Disable `allowScreenShare` (host only)
+- Enable `muteParticipantsOnJoin`
+- Set high `maxParticipants` limit
+- Consider disabling `allowChat` for large audiences
+
+### For Team Meetings
+- Keep most settings at defaults
+- Enable `waitingRoom` if needed
+- Set `maxParticipants` to team size
+- Allow guest access for external participants

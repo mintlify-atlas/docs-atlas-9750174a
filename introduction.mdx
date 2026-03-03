@@ -1,0 +1,228 @@
+---
+title: Introduction
+description: Real-time video conferencing platform built with WebRTC, React, and NestJS
+---
+
+# Welcome to Neuron Meet
+
+Neuron Meet is a powerful, open-source video conferencing platform that brings high-quality real-time communication to your applications. Built on modern web technologies, it delivers a seamless experience for both developers and end-users.
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Get your local development environment up and running in minutes
+  </Card>
+  <Card title="Features" icon="star" href="/features">
+    Explore the comprehensive feature set including HD video, screen sharing, and more
+  </Card>
+  <Card title="API reference" icon="code" href="/api-reference">
+    Complete API documentation for integrating Neuron Meet
+  </Card>
+  <Card title="Deployment" icon="cloud" href="/deployment">
+    Deploy to production with our step-by-step guides
+  </Card>
+</CardGroup>
+
+## What is Neuron Meet?
+
+Neuron Meet is a full-stack video conferencing solution that provides everything you need to build real-time communication features into your applications. Whether you're building a team collaboration tool, online classroom, or telemedicine platform, Neuron Meet gives you the foundation to get started quickly.
+
+<Note>
+  Neuron Meet uses WebRTC for peer-to-peer connections, ensuring low latency and high-quality audio/video streams.
+</Note>
+
+## Key features
+
+Neuron Meet comes packed with features designed for modern video conferencing:
+
+- **HD video and audio calls** - Crystal-clear communication with adaptive bitrate streaming
+- **Screen sharing** - Share your screen with participants for presentations and collaboration
+- **Real-time chat** - In-meeting text chat with typing indicators and message history
+- **Host controls** - Comprehensive meeting management including mute participants, lock rooms, and remove users
+- **Guest access** - Allow participants to join without creating an account
+- **Mobile responsive** - Fully responsive design that works seamlessly on mobile devices
+- **Hand raise** - Non-verbal participation with hand raise feature
+- **Room locking** - Secure meetings by preventing new participants from joining
+- **Participant management** - Real-time participant list with status indicators
+
+## Tech stack
+
+Neuron Meet is built with a modern, production-ready technology stack:
+
+### Frontend
+
+<CardGroup cols={2}>
+  <Card title="React 18" icon="react">
+    Latest React with hooks and concurrent features
+  </Card>
+  <Card title="TypeScript" icon="code">
+    Full type safety across the entire codebase
+  </Card>
+  <Card title="Tailwind CSS" icon="paintbrush">
+    Utility-first CSS framework for rapid UI development
+  </Card>
+  <Card title="Zustand" icon="database">
+    Lightweight state management for React
+  </Card>
+</CardGroup>
+
+**Additional frontend tools:**
+- **Vite** - Lightning-fast build tool and dev server
+- **React Router** - Client-side routing with nested routes
+- **TanStack Query** - Powerful data fetching and caching
+- **Socket.io Client** - Real-time WebSocket communication
+- **Lucide React** - Beautiful, consistent icons
+
+### Backend
+
+<CardGroup cols={2}>
+  <Card title="NestJS" icon="server">
+    Progressive Node.js framework with TypeScript support
+  </Card>
+  <Card title="Socket.io" icon="bolt">
+    Real-time bidirectional event-based communication
+  </Card>
+  <Card title="Prisma" icon="database">
+    Next-generation ORM with type-safe database access
+  </Card>
+  <Card title="PostgreSQL" icon="database">
+    Robust, production-ready relational database
+  </Card>
+</CardGroup>
+
+**Additional backend tools:**
+- **JWT Authentication** - Secure token-based authentication
+- **Bcrypt** - Password hashing and security
+- **Class Validator** - DTO validation with decorators
+- **Passport.js** - Authentication middleware
+
+## Architecture overview
+
+Neuron Meet follows a clean architecture pattern with clear separation of concerns:
+
+```
+neuron-meet/
+├── client/          # React frontend application
+│   ├── src/
+│   │   ├── components/  # Reusable UI components
+│   │   ├── hooks/       # Custom React hooks (useWebRTC, etc.)
+│   │   ├── pages/       # Route-based page components
+│   │   ├── store/       # Zustand state management
+│   │   └── lib/         # Utilities and helpers
+│   └── package.json
+├── server/          # NestJS backend application
+│   ├── src/
+│   │   ├── auth/        # Authentication module
+│   │   ├── rooms/       # Room management module
+│   │   ├── signaling/   # WebRTC signaling gateway
+│   │   ├── chat/        # Chat functionality
+│   │   └── prisma/      # Database service
+│   ├── prisma/
+│   │   └── schema.prisma  # Database schema
+│   └── package.json
+└── package.json     # Root workspace configuration
+```
+
+## WebRTC signaling
+
+Neuron Meet implements a robust WebRTC signaling server using Socket.io. The signaling gateway (`server/src/signaling/signaling.gateway.ts:30`) handles:
+
+- **Room management** - Join, leave, and room state synchronization
+- **Peer negotiation** - SDP offer/answer exchange for WebRTC connections
+- **ICE candidates** - Network connectivity information exchange
+- **Media controls** - Audio/video toggle, screen sharing start/stop
+- **Host controls** - Mute participants, remove users, lock rooms
+
+<CodeGroup>
+```typescript Example: Join room event
+@SubscribeMessage('join-room')
+async handleJoinRoom(
+  @ConnectedSocket() client: Socket,
+  @MessageBody() data: JoinRoomPayload,
+) {
+  const { roomCode, userId, displayName } = data;
+  
+  // Validate and join room
+  const roomData = await this.signalingService.joinRoom(
+    client.id,
+    roomCode,
+    userId,
+    displayName,
+  );
+  
+  // Join socket room
+  client.join(roomData.roomId);
+  
+  // Notify other participants
+  client.to(roomData.roomId).emit('user-joined', {
+    participant: {
+      socketId: client.id,
+      userId,
+      displayName,
+      isHost: roomData.isHost,
+    },
+  });
+  
+  return { success: true, roomId: roomData.roomId };
+}
+```
+
+```typescript Example: WebRTC offer/answer
+@SubscribeMessage('offer')
+handleOffer(
+  @ConnectedSocket() client: Socket,
+  @MessageBody() data: SignalPayload,
+) {
+  this.server.to(data.targetId).emit('offer', {
+    senderId: client.id,
+    sdp: data.sdp,
+  });
+}
+
+@SubscribeMessage('answer')
+handleAnswer(
+  @ConnectedSocket() client: Socket,
+  @MessageBody() data: SignalPayload,
+) {
+  this.server.to(data.targetId).emit('answer', {
+    senderId: client.id,
+    sdp: data.sdp,
+  });
+}
+```
+</CodeGroup>
+
+## Database schema
+
+Neuron Meet uses Prisma with PostgreSQL for data persistence. The schema (`server/prisma/schema.prisma:1`) includes:
+
+- **User** - Authentication and profile information
+- **Room** - Meeting rooms with host and settings
+- **RoomSettings** - Configurable meeting permissions and limits
+- **Participant** - Join records for users and guests
+- **Message** - Chat messages with support for text, system, and file types
+
+<Warning>
+  Make sure to set up your PostgreSQL database and run migrations before starting the application. See the [Quickstart guide](/quickstart) for details.
+</Warning>
+
+## Authentication flow
+
+The platform supports both authenticated users and guest participants:
+
+1. **Registered users** - Full authentication with JWT tokens (`server/src/auth/auth.controller.ts:1`)
+   - Register with email and password
+   - Login to receive access token
+   - Access protected routes and create rooms
+
+2. **Guest users** - Join meetings without an account
+   - Provide display name at pre-join screen
+   - Limited to joining existing rooms
+   - No persistent profile or meeting history
+
+## Getting started
+
+Ready to get started? Head over to the [Quickstart guide](/quickstart) to set up your local development environment and run your first meeting.
+
+<Card title="Next: Quickstart" icon="arrow-right" href="/quickstart">
+  Install dependencies, configure your environment, and launch Neuron Meet in under 5 minutes
+</Card>

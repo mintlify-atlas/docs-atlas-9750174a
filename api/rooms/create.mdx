@@ -1,0 +1,167 @@
+---
+title: Create Room
+api: POST /rooms
+---
+
+Create a new meeting room with a unique room code. Authentication is required.
+
+## Authentication
+
+This endpoint requires JWT authentication. Include the Bearer token in the Authorization header.
+
+## Request Body
+
+<ParamField body="name" type="string" optional>
+  The name of the meeting room. Defaults to "Meeting Room" if not provided.
+  - Minimum length: 1
+  - Maximum length: 100
+</ParamField>
+
+<ParamField body="waitingRoom" type="boolean" optional default={false}>
+  Enable waiting room for participants. When enabled, participants must wait for host approval before joining.
+</ParamField>
+
+<ParamField body="maxParticipants" type="integer" optional default={50}>
+  Maximum number of participants allowed in the room.
+  - Minimum: 2
+  - Maximum: 100
+</ParamField>
+
+## Response
+
+Returns the created room object with settings and host information.
+
+<ResponseField name="id" type="string" required>
+  Unique identifier for the room
+</ResponseField>
+
+<ResponseField name="code" type="string" required>
+  Unique room code in format xxx-xxx-xxx (e.g., "abc-def-ghi")
+</ResponseField>
+
+<ResponseField name="name" type="string" required>
+  Name of the room
+</ResponseField>
+
+<ResponseField name="hostId" type="string" required>
+  ID of the user who created the room
+</ResponseField>
+
+<ResponseField name="isActive" type="boolean" required>
+  Whether the room is currently active
+</ResponseField>
+
+<ResponseField name="isLocked" type="boolean" required>
+  Whether the room is locked (prevents new participants from joining)
+</ResponseField>
+
+<ResponseField name="startedAt" type="string" required>
+  ISO 8601 timestamp when the room was started
+</ResponseField>
+
+<ResponseField name="createdAt" type="string" required>
+  ISO 8601 timestamp when the room was created
+</ResponseField>
+
+<ResponseField name="updatedAt" type="string" required>
+  ISO 8601 timestamp when the room was last updated
+</ResponseField>
+
+<ResponseField name="host" type="object" required>
+  Information about the room host
+  <ResponseField name="id" type="string" required>
+    Host user ID
+  </ResponseField>
+  <ResponseField name="displayName" type="string" required>
+    Host display name
+  </ResponseField>
+  <ResponseField name="avatarUrl" type="string">
+    URL to host's avatar image
+  </ResponseField>
+</ResponseField>
+
+<ResponseField name="settings" type="object" required>
+  Room settings configuration
+  <ResponseField name="id" type="string" required>
+    Settings ID
+  </ResponseField>
+  <ResponseField name="roomId" type="string" required>
+    Associated room ID
+  </ResponseField>
+  <ResponseField name="allowChat" type="boolean" required>
+    Whether chat is enabled (default: true)
+  </ResponseField>
+  <ResponseField name="allowScreenShare" type="boolean" required>
+    Whether screen sharing is allowed (default: true)
+  </ResponseField>
+  <ResponseField name="allowGuestAccess" type="boolean" required>
+    Whether guests can join without authentication (default: true)
+  </ResponseField>
+  <ResponseField name="waitingRoom" type="boolean" required>
+    Whether waiting room is enabled (default: false)
+  </ResponseField>
+  <ResponseField name="muteParticipantsOnJoin" type="boolean" required>
+    Whether participants are muted when they join (default: false)
+  </ResponseField>
+  <ResponseField name="maxParticipants" type="integer" required>
+    Maximum number of participants allowed (default: 100)
+  </ResponseField>
+</ResponseField>
+
+## Example Request
+
+```bash
+curl -X POST https://api.neuronmeet.com/rooms \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Team Standup",
+    "waitingRoom": true,
+    "maxParticipants": 10
+  }'
+```
+
+## Example Response
+
+```json
+{
+  "id": "clx1a2b3c4d5e6f7g8h9i0j",
+  "code": "abc-def-ghi",
+  "name": "Team Standup",
+  "hostId": "clx0a1b2c3d4e5f6g7h8i9j",
+  "isActive": true,
+  "isLocked": false,
+  "startedAt": "2026-03-03T10:30:00.000Z",
+  "createdAt": "2026-03-03T10:30:00.000Z",
+  "updatedAt": "2026-03-03T10:30:00.000Z",
+  "host": {
+    "id": "clx0a1b2c3d4e5f6g7h8i9j",
+    "displayName": "John Doe",
+    "avatarUrl": "https://example.com/avatar.jpg"
+  },
+  "settings": {
+    "id": "clx2a3b4c5d6e7f8g9h0i1j",
+    "roomId": "clx1a2b3c4d5e6f7g8h9i0j",
+    "allowChat": true,
+    "allowScreenShare": true,
+    "allowGuestAccess": true,
+    "waitingRoom": true,
+    "muteParticipantsOnJoin": false,
+    "maxParticipants": 10
+  }
+}
+```
+
+## Error Codes
+
+<ResponseField name="400" type="error">
+  **Bad Request** - Failed to generate unique room code after 10 attempts, or validation errors in request body
+</ResponseField>
+
+<ResponseField name="401" type="error">
+  **Unauthorized** - Missing or invalid JWT token
+</ResponseField>
+
+<ResponseField name="500" type="error">
+  **Internal Server Error** - Server error while creating the room
+</ResponseField>

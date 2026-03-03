@@ -1,80 +1,233 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quickstart
+description: Get Neuron Meet up and running on your local machine in minutes
 ---
 
-## Get started in three steps
+Get your local development environment set up and run your first Neuron Meet video conference in just a few minutes.
 
-Get your documentation site running locally and make your first customization.
+## Prerequisites
 
-### Step 1: Set up your local environment
+Before you begin, ensure you have the following installed:
+
+- **Node.js 18.0.0 or higher** - [Download Node.js](https://nodejs.org/)
+- **PostgreSQL 14 or higher** - [Download PostgreSQL](https://www.postgresql.org/download/) or use [Supabase](https://supabase.com)
+- **Git** - [Download Git](https://git-scm.com/)
+
+## Installation
+
+<Steps>
+  <Step title="Clone the repository">
+    ```bash
+    git clone https://github.com/Jasowills/Neuron-meet.git
+    cd Neuron-meet
+    ```
+  </Step>
+
+  <Step title="Install dependencies">
+    Install dependencies for both client and server:
+
+    <CodeGroup>
+    ```bash npm
+    npm run install:all
+    ```
+
+    ```bash manual
+    # Install root dependencies
+    npm install
+
+    # Install client dependencies
+    cd client && npm install
+
+    # Install server dependencies
+    cd ../server && npm install
+    ```
+    </CodeGroup>
+
+    This will install all required packages including React, NestJS, Prisma, Socket.io, and other dependencies.
+  </Step>
+
+  <Step title="Set up environment variables">
+    Create a `.env` file in the `server` directory:
+
+    ```bash
+    cp server/.env.example server/.env
+    ```
+
+    Then edit `server/.env` with your configuration:
+
+    **Option 1: Local PostgreSQL (Docker)**
+    ```bash
+    DATABASE_URL="postgresql://neuronmeet:neuronmeet@localhost:5432/neuronmeet"
+    DIRECT_URL="postgresql://neuronmeet:neuronmeet@localhost:5432/neuronmeet"
+    JWT_SECRET="your-super-secret-jwt-key-change-in-production"
+    JWT_EXPIRES_IN="7d"
+    PORT=3001
+    NODE_ENV=development
+    VITE_API_URL=http://localhost:3001
+    VITE_WS_URL=http://localhost:3001
+    ```
+
+    **Option 2: Supabase (Recommended for easy setup)**
+    ```bash
+    DATABASE_URL="postgresql://postgres.[project-ref]:[your-password]@aws-0-[region].pooler.supabase.com:6543/postgres"
+    DIRECT_URL="postgresql://postgres.[project-ref]:[your-password]@aws-0-[region].pooler.supabase.com:5432/postgres"
+    JWT_SECRET="your-super-secret-jwt-key-change-in-production"
+    JWT_EXPIRES_IN="7d"
+    PORT=3001
+    NODE_ENV=development
+    VITE_API_URL=http://localhost:3001
+    VITE_WS_URL=http://localhost:3001
+    ```
+
+    <Note>
+      If using Supabase, get your connection string from: Supabase Dashboard → Project Settings → Database → Connection string
+    </Note>
+  </Step>
+
+  <Step title="Set up the database">
+    Initialize the database schema using Prisma:
+
+    ```bash
+    npm run db:push
+    ```
+
+    This command will:
+    - Connect to your PostgreSQL database
+    - Create all required tables (User, Room, RoomSettings, Participant, Message)
+    - Set up indexes and relationships
+
+    <Tip>
+      For production deployments, use migrations instead: `npm run db:migrate`
+    </Tip>
+  </Step>
+
+  <Step title="Start the development servers">
+    Start both the backend and frontend servers:
+
+    ```bash
+    npm run dev
+    ```
+
+    This will concurrently start:
+    - **Backend (NestJS)** on `http://localhost:3001`
+    - **Frontend (React)** on `http://localhost:5173`
+
+    You should see output like:
+    ```
+    [server] Nest application successfully started on port 3001
+    [client] VITE v5.0.10 ready in 234 ms
+    [client] ➜  Local:   http://localhost:5173/
+    ```
+  </Step>
+</Steps>
+
+## Verify your installation
+
+1. **Open your browser** and navigate to `http://localhost:5173`
+2. **Create an account** by clicking "Sign Up" and filling in your details
+3. **Create a meeting room** from your dashboard
+4. **Join the meeting** and test your camera and microphone
+5. **Try features** like screen sharing, chat, and participant controls
+
+## Development workflow
+
+### Available scripts
+
+All scripts can be run from the root directory:
+
+| Script | Description |
+|--------|-------------|
+| `npm run dev` | Start both client and server in development mode |
+| `npm run dev:client` | Start only the React frontend |
+| `npm run dev:server` | Start only the NestJS backend |
+| `npm run build` | Build both client and server for production |
+| `npm run db:generate` | Generate Prisma client after schema changes |
+| `npm run db:push` | Push schema changes to database (development) |
+| `npm run db:migrate` | Create and run migrations (production) |
+
+### Project structure
+
+```
+Neuron-meet/
+├── client/                 # React frontend
+│   ├── src/
+│   │   ├── components/    # React components
+│   │   ├── pages/        # Page components (Home, Meeting, Dashboard)
+│   │   ├── hooks/        # Custom React hooks
+│   │   ├── lib/          # Utilities and helpers
+│   │   └── store/        # Zustand state management
+│   └── package.json
+├── server/                # NestJS backend
+│   ├── src/
+│   │   ├── auth/         # Authentication module
+│   │   ├── rooms/        # Room management
+│   │   ├── users/        # User management
+│   │   ├── signaling/    # WebRTC signaling gateway
+│   │   └── chat/         # Real-time chat
+│   ├── prisma/
+│   │   └── schema.prisma # Database schema
+│   └── package.json
+└── package.json          # Root package.json with scripts
+```
+
+## Troubleshooting
 
 <AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
+  <Accordion title="Database connection errors">
+    **Error**: `Can't reach database server`
+
+    **Solutions**:
+    - Verify your `DATABASE_URL` is correct
+    - Ensure PostgreSQL is running (if using local Docker)
+    - Check firewall settings aren't blocking port 5432
+    - For Supabase, verify your project is active and credentials are correct
   </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
+
+  <Accordion title="Port already in use">
+    **Error**: `Port 3001 is already in use`
+
+    **Solutions**:
+    - Change the `PORT` variable in your `.env` file
+    - Kill the process using the port: `lsof -ti:3001 | xargs kill -9` (macOS/Linux)
+    - Or use a different port in both `server/.env` and update `VITE_API_URL`
+  </Accordion>
+
+  <Accordion title="WebRTC connection issues">
+    **Problem**: Video/audio not connecting between peers
+
+    **Solutions**:
+    - Ensure both browser and OS have granted camera/microphone permissions
+    - Check that you're using HTTPS in production (required for WebRTC)
+    - Configure TURN server for production deployments (see `.env.example`)
+    - Test in an incognito window to rule out browser extension conflicts
+  </Accordion>
+
+  <Accordion title="Module not found errors">
+    **Error**: `Cannot find module '@nestjs/core'` or similar
+
+    **Solutions**:
+    - Delete `node_modules` and reinstall: `rm -rf node_modules client/node_modules server/node_modules && npm run install:all`
+    - Clear npm cache: `npm cache clean --force`
+    - Ensure you're using Node.js 18 or higher: `node --version`
   </Accordion>
 </AccordionGroup>
-
-### Step 2: Deploy your changes
-
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
-
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
-
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 3: Go live
-
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
 
 ## Next steps
 
-Now that you have your docs running, explore these key features:
-
 <CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
+  <Card title="Explore features" icon="video" href="/features/video-audio">
+    Learn about video/audio, screen sharing, chat, and more
+  </Card>
+  
+  <Card title="Deploy to production" icon="rocket" href="/deployment/overview">
+    Deploy Neuron Meet to Vercel, Railway, or your own infrastructure
+  </Card>
+  
+  <Card title="API reference" icon="code" href="/api/auth/register">
+    Explore the REST and WebSocket API documentation
+  </Card>
+  
+  <Card title="Architecture" icon="sitemap" href="/architecture/overview">
+    Understand how Neuron Meet works under the hood
+  </Card>
 </CardGroup>
-
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>

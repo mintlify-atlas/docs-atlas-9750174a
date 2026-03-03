@@ -1,0 +1,236 @@
+---
+title: WebSocket Overview
+description: Connect to Neuron Meet's real-time WebSocket API for video conferencing and chat
+---
+
+## Introduction
+
+Neuron Meet uses Socket.io for real-time bidirectional communication between clients and the server. WebSocket connections handle:
+
+- WebRTC signaling (offer, answer, ICE candidates)
+- Room management (join, leave)
+- Media controls (audio, video, screen sharing)
+- Chat messaging
+- Participant events
+
+## Connection Setup
+
+### Installing Socket.io Client
+
+```bash
+npm install socket.io-client
+```
+
+### Connecting to the WebSocket Server
+
+```typescript
+import { io, Socket } from "socket.io-client";
+
+const WS_URL = "https://api.neuronmeet.com"; // or your server URL
+
+const socket = io(WS_URL, {
+  auth: {
+    token: "your-auth-token",        // Optional: JWT token for authenticated users
+    userId: "user123",                // Optional: User ID
+    displayName: "John Doe",          // Required: Display name for the participant
+  },
+  transports: ["websocket", "polling"],
+  reconnection: true,
+  reconnectionAttempts: 10,
+  reconnectionDelay: 1000,
+  reconnectionDelayMax: 5000,
+});
+```
+
+### Authentication
+
+Neuron Meet supports both authenticated and guest users:
+
+- **Authenticated users**: Pass a valid JWT token in `auth.token` and `auth.userId`
+- **Guest users**: Only provide `auth.displayName`
+
+Authentication happens during the WebSocket connection handshake via the `auth` object.
+
+## Connection Events
+
+### Client Connection Lifecycle
+
+```typescript
+socket.on("connect", () => {
+  console.log("Connected to server", socket.id);
+});
+
+socket.on("disconnect", (reason) => {
+  console.log("Disconnected:", reason);
+  if (reason !== "io client disconnect") {
+    // Server disconnected, attempt reconnection
+  }
+});
+
+socket.on("reconnect_attempt", (attemptNumber) => {
+  console.log("Attempting to reconnect:", attemptNumber);
+});
+
+socket.on("reconnect_failed", () => {
+  console.error("Reconnection failed");
+});
+
+socket.on("connect_error", (error) => {
+  console.error("Connection error:", error);
+});
+```
+
+## Basic Usage Example
+
+```typescript
+import { io } from "socket.io-client";
+
+class MeetingClient {
+  private socket: Socket;
+
+  connect(displayName: string, token?: string, userId?: string) {
+    this.socket = io("https://api.neuronmeet.com", {
+      auth: {
+        token,
+        userId,
+        displayName,
+      },
+      transports: ["websocket", "polling"],
+      reconnection: true,
+    });
+
+    this.setupEventHandlers();
+    return this.socket;
+  }
+
+  private setupEventHandlers() {
+    // Connection events
+    this.socket.on("connect", () => {
+      console.log("Connected with socket ID:", this.socket.id);
+    });
+
+    this.socket.on("disconnect", (reason) => {
+      console.log("Disconnected:", reason);
+    });
+  }
+
+  joinRoom(roomCode: string, userId?: string, displayName: string) {
+    return new Promise((resolve, reject) => {
+      this.socket.emit("join-room", {
+        roomCode,
+        userId,
+        displayName,
+      });
+
+      // Wait for confirmation
+      this.socket.once("room-joined", (data) => {
+        resolve(data);
+      });
+
+      this.socket.once("join-error", (error) => {
+        reject(new Error(error.message));
+      });
+
+      // Timeout
+      setTimeout(() => reject(new Error("Join timeout")), 15000);
+    });
+  }
+
+  disconnect() {
+    this.socket.disconnect();
+  }
+}
+
+// Usage
+const client = new MeetingClient();
+client.connect("John Doe");
+const roomData = await client.joinRoom("ABC123", undefined, "John Doe");
+console.log("Joined room:", roomData);
+```
+
+## WebSocket Namespaces
+
+Neuron Meet uses a single namespace for all WebSocket communication:
+
+- **Namespace**: `/` (default)
+- **URL**: `wss://api.neuronmeet.com/`
+
+All events (signaling, chat, room management) use the same namespace.
+
+## Error Handling
+
+```typescript
+// Join errors
+socket.on("join-error", (data: { code: string; message: string }) => {
+  console.error("Failed to join room:", data.message);
+  // Codes: JOIN_FAILED
+});
+
+// Generic errors
+socket.on("error", (data: { code: string; message: string }) => {
+  console.error("Socket error:", data);
+});
+
+// Force disconnect (kicked by host)
+socket.on("force-disconnect", (data: { reason: string }) => {
+  console.log("Disconnected by host:", data.reason);
+  socket.disconnect();
+});
+```
+
+## Best Practices
+
+### 1. Handle Reconnections
+
+Always implement reconnection logic to handle network disruptions:
+
+```typescript
+socket.on("connect", () => {
+  const isReconnect = socket.recovered; // true if reconnected
+  if (isReconnect) {
+    // Rejoin room after reconnection
+    socket.emit("join-room", {
+      roomCode: currentRoomCode,
+      userId: currentUserId,
+      displayName: currentDisplayName,
+    });
+  }
+});
+```
+
+### 2. Clean Up Event Listeners
+
+Remove event listeners when leaving a room or unmounting components:
+
+```typescript
+const events = [
+  "room-joined",
+  "user-joined",
+  "user-left",
+  "offer",
+  "answer",
+  "ice-candidate",
+];
+
+events.forEach((event) => socket.off(event));
+```
+
+### 3. Implement Timeouts
+
+Always use timeouts for operations that expect responses:
+
+```typescript
+const timeout = setTimeout(() => {
+  reject(new Error("Operation timeout"));
+}, 15000);
+
+socket.once("response-event", (data) => {
+  clearTimeout(timeout);
+  resolve(data);
+});
+```
+
+## Next Steps
+
+- [WebRTC Signaling Events](/api/websocket/signaling) - Learn about real-time video/audio signaling
+- [Chat Events](/api/websocket/chat) - Implement real-time chat messaging

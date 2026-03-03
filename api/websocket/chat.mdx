@@ -1,0 +1,575 @@
+---
+title: Chat Events
+description: Real-time chat messaging events for Neuron Meet video conferences
+---
+
+## Overview
+
+Neuron Meet provides real-time chat functionality within video conference rooms using Socket.io. Chat messages are persisted to the database and include typing indicators for enhanced user experience.
+
+## Chat Message Events
+
+### Send Chat Message
+
+Send a text message to all participants in the room.
+
+**Client → Server: `chat-message`**
+
+```typescript
+socket.emit("chat-message", {
+  roomId: "room-uuid",
+  content: "Hello everyone!",
+});
+
+// Returns: { success: true, message: ChatMessage } or { success: false, error: string }
+```
+
+**Server → All Clients: `chat-message`**
+
+```typescript
+socket.on("chat-message", (message: {
+  id: string;              // Message UUID
+  senderId: string;        // Socket ID of sender (for real-time identification)
+  senderName: string;      // Display name of sender
+  content: string;         // Message content
+  type: "TEXT" | "FILE" | "SYSTEM";  // Message type
+  timestamp: string;       // ISO 8601 timestamp
+  user?: {                 // Optional: authenticated user info
+    id: string;
+    name: string;
+    avatarUrl?: string;
+  };
+}) => {
+  console.log(`${message.senderName}: ${message.content}`);
+});
+```
+
+### Message Types
+
+Neuron Meet supports three message types:
+
+- **TEXT**: Regular user messages (default)
+- **FILE**: File attachments (future feature)
+- **SYSTEM**: System-generated messages (e.g., "User joined the room")
+
+```typescript
+enum MessageType {
+  TEXT = "TEXT",
+  FILE = "FILE",
+  SYSTEM = "SYSTEM",
+}
+```
+
+## Typing Indicators
+
+### Start Typing
+
+Notify other participants that you're typing a message.
+
+**Client → Server: `typing-start`**
+
+```typescript
+socket.emit("typing-start", {
+  roomId: "room-uuid",
+});
+```
+
+**Server → Other Clients: `user-typing`**
+
+```typescript
+socket.on("user-typing", (data: {
+  socketId: string;       // Socket ID of typing user
+  displayName: string;    // Display name of typing user
+  isTyping: true;         // Always true for typing-start
+}) => {
+  console.log(`${data.displayName} is typing...`);
+});
+```
+
+### Stop Typing
+
+Notify other participants that you stopped typing.
+
+**Client → Server: `typing-stop`**
+
+```typescript
+socket.emit("typing-stop", {
+  roomId: "room-uuid",
+});
+```
+
+**Server → Other Clients: `user-typing`**
+
+```typescript
+socket.on("user-typing", (data: {
+  socketId: string;
+  displayName: string;
+  isTyping: false;        // Always false for typing-stop
+}) => {
+  console.log(`${data.displayName} stopped typing`);
+});
+```
+
+### Auto-Clear Typing Indicator
+
+The server automatically clears typing indicators after 3 seconds of inactivity. This prevents stale "is typing" states.
+
+```typescript
+// Server-side behavior:
+// - typing-start sets a 3-second timeout
+// - If no new typing-start is received, typing is auto-cleared
+// - Sending a message also clears the typing indicator
+```
+
+## Chat Message History
+
+When joining a room, the last 50 chat messages are included in the `room-joined` event:
+
+```typescript
+socket.on("room-joined", (data: {
+  roomId: string;
+  roomCode: string;
+  participants: ParticipantInfo[];
+  messages: ChatMessage[];  // Last 50 messages
+  isHost: boolean;
+  settings: RoomSettings;
+}) => {
+  // Display message history
+  data.messages.forEach(msg => {
+    console.log(`${msg.senderName} (${msg.timestamp}): ${msg.content}`);
+  });
+});
+```
+
+Retrieved from `server/src/signaling/signaling.service.ts:141-154`:
+
+```typescript
+const messages = await this.prisma.message.findMany({
+  where: { roomId: room.id },
+  orderBy: { createdAt: "asc" },
+  take: 50,
+  include: {
+    user: {
+      select: {
+        id: true,
+        name: true,
+        displayName: true,
+      },
+    },
+  },
+});
+```
+
+## Complete Example: Chat Client
+
+```typescript
+import { io, Socket } from "socket.io-client";
+
+interface ChatMessage {
+  id: string;
+  senderId: string;
+  senderName: string;
+  content: string;
+  type: "TEXT" | "FILE" | "SYSTEM";
+  timestamp: string;
+}
+
+class ChatClient {
+  private socket: Socket;
+  private messages: ChatMessage[] = [];
+  private typingUsers: Set<string> = new Set();
+  private typingTimeout?: NodeJS.Timeout;
+
+  constructor(wsUrl: string, displayName: string) {
+    this.socket = io(wsUrl, {
+      auth: { displayName },
+    });
+
+    this.setupChatHandlers();
+  }
+
+  private setupChatHandlers() {
+    // Room joined with message history
+    this.socket.on("room-joined", (data) => {
+      this.messages = data.messages || [];
+      console.log(`Loaded ${this.messages.length} messages`);
+      this.renderMessages();
+    });
+
+    // New message received
+    this.socket.on("chat-message", (message) => {
+      this.messages.push(message);
+      this.renderMessages();
+      
+      // Play notification sound if chat is not focused
+      if (!document.hasFocus()) {
+        this.playNotificationSound();
+      }
+    });
+
+    // Typing indicators
+    this.socket.on("user-typing", (data) => {
+      if (data.isTyping) {
+        this.typingUsers.add(data.displayName);
+      } else {
+        this.typingUsers.delete(data.displayName);
+      }
+      this.renderTypingIndicator();
+    });
+  }
+
+  sendMessage(content: string, roomId: string) {
+    if (!content.trim()) return;
+
+    this.socket.emit("chat-message", {
+      roomId,
+      content: content.trim(),
+    });
+
+    // Clear typing indicator
+    this.stopTyping(roomId);
+  }
+
+  startTyping(roomId: string) {
+    // Send typing-start
+    this.socket.emit("typing-start", { roomId });
+
+    // Auto-stop typing after 3 seconds
+    if (this.typingTimeout) {
+      clearTimeout(this.typingTimeout);
+    }
+    this.typingTimeout = setTimeout(() => {
+      this.stopTyping(roomId);
+    }, 3000);
+  }
+
+  stopTyping(roomId: string) {
+    if (this.typingTimeout) {
+      clearTimeout(this.typingTimeout);
+      this.typingTimeout = undefined;
+    }
+    this.socket.emit("typing-stop", { roomId });
+  }
+
+  private renderMessages() {
+    // Render messages in UI
+    this.messages.forEach(msg => {
+      console.log(`[${msg.timestamp}] ${msg.senderName}: ${msg.content}`);
+    });
+  }
+
+  private renderTypingIndicator() {
+    if (this.typingUsers.size === 0) {
+      console.log(""); // Clear indicator
+    } else if (this.typingUsers.size === 1) {
+      const user = Array.from(this.typingUsers)[0];
+      console.log(`${user} is typing...`);
+    } else if (this.typingUsers.size === 2) {
+      const users = Array.from(this.typingUsers);
+      console.log(`${users[0]} and ${users[1]} are typing...`);
+    } else {
+      console.log("Several people are typing...");
+    }
+  }
+
+  private playNotificationSound() {
+    // Play notification sound
+    const audio = new Audio("/sounds/message.mp3");
+    audio.play().catch(() => {});
+  }
+}
+
+// Usage
+const chatClient = new ChatClient("wss://api.neuronmeet.com", "John Doe");
+
+// Join room
+socket.emit("join-room", {
+  roomCode: "ABC123",
+  displayName: "John Doe",
+});
+
+// Send message
+chatClient.sendMessage("Hello everyone!", "room-uuid");
+
+// Handle typing in input field
+input.addEventListener("input", () => {
+  chatClient.startTyping("room-uuid");
+});
+
+// Send on Enter key
+input.addEventListener("keypress", (e) => {
+  if (e.key === "Enter") {
+    chatClient.sendMessage(input.value, "room-uuid");
+    input.value = "";
+  }
+});
+```
+
+## React Example with Typing Indicators
+
+```typescript
+import { useState, useEffect, useRef } from "react";
+import { socketClient } from "@/lib/socket/SocketClient";
+
+function ChatComponent({ roomId }: { roomId: string }) {
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [input, setInput] = useState("");
+  const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
+  const typingTimeoutRef = useRef<NodeJS.Timeout>();
+
+  useEffect(() => {
+    const socket = socketClient.getSocket();
+    if (!socket) return;
+
+    // Message received
+    socket.on("chat-message", (message) => {
+      setMessages((prev) => [...prev, message]);
+    });
+
+    // Typing indicators
+    socket.on("user-typing", (data) => {
+      setTypingUsers((prev) => {
+        const next = new Set(prev);
+        if (data.isTyping) {
+          next.add(data.displayName);
+        } else {
+          next.delete(data.displayName);
+        }
+        return next;
+      });
+    });
+
+    return () => {
+      socket.off("chat-message");
+      socket.off("user-typing");
+    };
+  }, []);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInput(e.target.value);
+
+    // Send typing indicator
+    socketClient.emit("typing-start", { roomId });
+
+    // Auto-stop after 3 seconds
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    typingTimeoutRef.current = setTimeout(() => {
+      socketClient.emit("typing-stop", { roomId });
+    }, 3000);
+  };
+
+  const handleSendMessage = () => {
+    if (!input.trim()) return;
+
+    socketClient.emit("chat-message", {
+      roomId,
+      content: input.trim(),
+    });
+
+    setInput("");
+
+    // Clear typing indicator
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    socketClient.emit("typing-stop", { roomId });
+  };
+
+  return (
+    <div className="chat-container">
+      <div className="messages">
+        {messages.map((msg) => (
+          <div key={msg.id} className="message">
+            <strong>{msg.senderName}:</strong> {msg.content}
+            <span className="timestamp">{new Date(msg.timestamp).toLocaleTimeString()}</span>
+          </div>
+        ))}
+      </div>
+
+      {typingUsers.size > 0 && (
+        <div className="typing-indicator">
+          {Array.from(typingUsers).join(", ")} {typingUsers.size === 1 ? "is" : "are"} typing...
+        </div>
+      )}
+
+      <div className="input-container">
+        <input
+          type="text"
+          value={input}
+          onChange={handleInputChange}
+          onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
+          placeholder="Type a message..."
+        />
+        <button onClick={handleSendMessage}>Send</button>
+      </div>
+    </div>
+  );
+}
+```
+
+## Best Practices
+
+### 1. Debounce Typing Indicators
+
+Avoid sending excessive typing events:
+
+```typescript
+let typingTimeout: NodeJS.Timeout | undefined;
+let isTyping = false;
+
+function handleTyping(roomId: string) {
+  // Send typing-start only once
+  if (!isTyping) {
+    socket.emit("typing-start", { roomId });
+    isTyping = true;
+  }
+
+  // Reset timeout
+  if (typingTimeout) {
+    clearTimeout(typingTimeout);
+  }
+
+  // Auto-stop after 3 seconds
+  typingTimeout = setTimeout(() => {
+    socket.emit("typing-stop", { roomId });
+    isTyping = false;
+  }, 3000);
+}
+```
+
+### 2. Clear Typing on Message Send
+
+Always clear typing indicators when sending a message:
+
+```typescript
+function sendMessage(content: string, roomId: string) {
+  socket.emit("chat-message", { roomId, content });
+  socket.emit("typing-stop", { roomId });
+  
+  if (typingTimeout) {
+    clearTimeout(typingTimeout);
+  }
+}
+```
+
+### 3. Validate Message Content
+
+Validate messages client-side before sending:
+
+```typescript
+function sendMessage(content: string, roomId: string) {
+  // Validate content
+  if (!content || content.trim().length === 0) {
+    return { success: false, error: "Message cannot be empty" };
+  }
+
+  if (content.length > 2000) {
+    return { success: false, error: "Message too long (max 2000 characters)" };
+  }
+
+  socket.emit("chat-message", {
+    roomId,
+    content: content.trim(),
+  });
+
+  return { success: true };
+}
+```
+
+### 4. Handle System Messages
+
+Display system messages differently:
+
+```typescript
+socket.on("chat-message", (message) => {
+  if (message.type === "SYSTEM") {
+    // Render as system notification
+    console.log(`[SYSTEM] ${message.content}`);
+  } else {
+    // Render as regular message
+    console.log(`${message.senderName}: ${message.content}`);
+  }
+});
+```
+
+### 5. Implement Message Pagination
+
+For loading older messages:
+
+```typescript
+// Note: This is a future feature
+// The current implementation loads the last 50 messages on room join
+
+async function loadMoreMessages(roomId: string, beforeTimestamp: string) {
+  const response = await fetch(`/api/rooms/${roomId}/messages?before=${beforeTimestamp}&limit=50`);
+  const olderMessages = await response.json();
+  return olderMessages;
+}
+```
+
+## Event Flow Diagram
+
+### Message Send Flow
+
+```
+Client A                    Server          Other Clients
+     |                          |                    |
+     |    chat-message          |                    |
+     |---------------------------->                  |
+     |  (roomId, content)       |                    |
+     |                          |                    |
+     |                          | Save to database   |
+     |                          |                    |
+     |    chat-message          |                    |
+     |<-------------------------  |                    |
+     |  (includes message)      |   chat-message     |
+     |                          |------------------->|
+     |                          |   (broadcast)      |
+     |                          |                    |
+```
+
+### Typing Indicator Flow
+
+```
+Client A                    Server          Other Clients
+     |                          |                    |
+     |    typing-start          |                    |
+     |---------------------------->                  |
+     |                          |                    |
+     |                          |   user-typing      |
+     |                          |------------------->|
+     |                          | (isTyping: true)   |
+     |                          |                    |
+     |  (3 seconds pass)        |                    |
+     |                          |                    |
+     |    typing-stop           |                    |
+     |---------------------------->                  |
+     |                          |   user-typing      |
+     |                          |------------------->|
+     |                          | (isTyping: false)  |
+     |                          |                    |
+```
+
+## Error Handling
+
+```typescript
+// Message send failed
+socket.emit("chat-message", { roomId, content }, (response) => {
+  if (!response.success) {
+    console.error("Failed to send message:", response.error);
+    // Show error to user
+  }
+});
+
+// Common errors:
+// - "Message content is required"
+// - "Failed to send message" (database error)
+// - Room not found or user not in room
+```
+
+## Next Steps
+
+- [WebRTC Signaling](/api/websocket/signaling) - Learn about real-time video/audio signaling
+- [WebSocket Overview](/api/websocket/overview) - Review connection setup and authentication

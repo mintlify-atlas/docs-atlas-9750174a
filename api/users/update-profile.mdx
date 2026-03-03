@@ -1,0 +1,104 @@
+---
+title: Update User Profile
+api: PATCH /users/me
+---
+
+Update the authenticated user's profile information. This endpoint allows users to modify their display name and avatar URL.
+
+## Authentication
+
+This endpoint requires a valid JWT token in the Authorization header. The user ID is automatically extracted from the JWT token.
+
+## Request Body
+
+<ParamField body="displayName" type="string" optional>
+  The user's display name
+</ParamField>
+
+<ParamField body="avatarUrl" type="string" optional>
+  URL to the user's avatar image
+</ParamField>
+
+## Response
+
+<ResponseField name="id" type="string">
+  Unique identifier for the user
+</ResponseField>
+
+<ResponseField name="email" type="string">
+  User's email address
+</ResponseField>
+
+<ResponseField name="displayName" type="string" nullable>
+  Updated display name
+</ResponseField>
+
+<ResponseField name="avatarUrl" type="string" nullable>
+  Updated avatar URL
+</ResponseField>
+
+<ResponseField name="createdAt" type="string">
+  ISO 8601 timestamp of when the user account was created
+</ResponseField>
+
+## Example Request
+
+```bash
+curl -X PATCH https://api.neuronmeet.com/users/me \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "displayName": "Jane Smith",
+    "avatarUrl": "https://example.com/avatars/janesmith.jpg"
+  }'
+```
+
+## Example Response
+
+```json
+{
+  "id": "clx1a2b3c4d5e6f7g8h9i0j",
+  "email": "user@example.com",
+  "displayName": "Jane Smith",
+  "avatarUrl": "https://example.com/avatars/janesmith.jpg",
+  "createdAt": "2024-01-15T10:30:00.000Z"
+}
+```
+
+## Partial Updates
+
+You can update only the fields you want to change. For example, to update only the display name:
+
+```bash
+curl -X PATCH https://api.neuronmeet.com/users/me \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "displayName": "New Display Name"
+  }'
+```
+
+## Error Responses
+
+### 401 Unauthorized
+
+Returned when the JWT token is missing or invalid.
+
+```json
+{
+  "statusCode": 401,
+  "message": "Unauthorized"
+}
+```
+
+### 400 Bad Request
+
+Returned when the request body contains invalid data.
+
+```json
+{
+  "statusCode": 400,
+  "message": "Bad Request",
+  "error": "Validation failed"
+}
+```

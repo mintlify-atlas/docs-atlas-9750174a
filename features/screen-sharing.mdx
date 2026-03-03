@@ -1,0 +1,265 @@
+---
+title: 'Screen Sharing'
+description: 'Share your screen, application windows, or browser tabs with meeting participants'
+icon: 'desktop'
+---
+
+## Overview
+
+Screen sharing in Neuron Meet allows you to share your entire screen, specific application windows, or browser tabs with all meeting participants. This feature is essential for presentations, demonstrations, collaborative work, and remote support.
+
+## Starting Screen Share
+
+<Steps>
+  <Step title="Click the Screen Share Button">
+    In the meeting control bar (bottom of screen), click the **Monitor** icon to start screen sharing.
+  </Step>
+  
+  <Step title="Choose What to Share">
+    Your browser will display a dialog with sharing options:
+    - **Entire Screen** - Share everything on your display
+    - **Application Window** - Share a specific app (e.g., PowerPoint, Excel)
+    - **Browser Tab** - Share a specific browser tab
+  </Step>
+  
+  <Step title="Select Your Content">
+    Click on the screen, window, or tab you want to share, then click **Share**.
+  </Step>
+  
+  <Step title="Confirm Sharing Started">
+    The screen share button will turn **blue/purple** to indicate you're actively presenting.
+    All participants will see your shared content in a dedicated screen share area.
+  </Step>
+</Steps>
+
+<Note>
+  Screen sharing is available on desktop browsers. Mobile devices have limited screen sharing support depending on the browser and operating system.
+</Note>
+
+## Stopping Screen Share
+
+<Steps>
+  <Step title="Click the Screen Share Button Again">
+    The screen share button (now highlighted) acts as a toggle. Click it to stop presenting.
+  </Step>
+  
+  <Step title="Or Use Browser Controls">
+    Most browsers show a "You are sharing" notification with a **Stop Sharing** button.
+  </Step>
+</Steps>
+
+When you stop sharing:
+- The screen share view disappears for all participants
+- The control button returns to its default state
+- Participants return to seeing the normal video grid
+
+## Screen Share Display
+
+### For the Presenter
+
+When you're sharing your screen:
+- The **screen share button turns purple/highlighted**
+- A label appears on the shared content showing "You are presenting"
+- Your camera video continues in the video grid below
+- You can still see other participants' video tiles
+
+### For Participants
+
+When someone else is sharing:
+- The **shared screen appears at the top** of the meeting window in a large view
+- A label shows "Screen share" or the presenter's name
+- Participant video tiles appear below the screen share in a smaller grid
+- Video tiles may be paginated if there are many participants
+
+<Tip>
+  The shared screen is displayed with **black bars (letterboxing)** if needed to preserve the aspect ratio and prevent distortion.
+</Tip>
+
+## Multiple Screen Shares
+
+Neuron Meet handles multiple screen shares gracefully:
+
+- **Only one screen share is displayed at a time** in the main viewing area
+- If multiple people start screen sharing, the most recent one takes priority
+- Participants see a "presenting" indicator next to anyone who's sharing in the participants panel
+
+<Warning>
+  If you're already presenting and someone else starts screen sharing, your screen share may be replaced in the main view. Always coordinate with other participants before sharing.
+</Warning>
+
+## What You Can Share
+
+### Entire Screen
+**Best for:**
+- Switching between multiple applications during a presentation
+- Demonstrating workflows that span different programs
+- Providing technical support
+
+**Considerations:**
+- Participants can see **everything** on your screen, including notifications
+- Close sensitive information or private tabs before sharing
+- Be aware of desktop icons and background images
+
+### Application Window
+**Best for:**
+- Sharing a specific program (PowerPoint, Figma, Excel, etc.)
+- Keeping other work private
+- Focused demonstrations
+
+**Considerations:**
+- Participants only see the selected application
+- If you switch away from the app, participants may see a blank screen
+- Some apps may not capture properly depending on your system
+
+### Browser Tab
+**Best for:**
+- Sharing web content, dashboards, or web applications
+- Sharing a specific website or online tool
+- Keeping other browser tabs private
+
+**Considerations:**
+- Only the selected tab is visible
+- Participants won't see your browser's address bar or bookmarks
+- Audio from the tab can be shared (you'll be prompted)
+
+<Tip>
+  When sharing a browser tab, you can often enable **"Share tab audio"** to let participants hear sounds from videos or web apps in that tab.
+</Tip>
+
+## Screen Sharing Quality
+
+Screen share quality depends on several factors:
+
+- **Internet connection speed** - Faster connections provide higher quality
+- **Content type** - Static presentations compress better than videos
+- **Screen resolution** - Lower resolutions are easier to transmit
+- **Movement** - Frequent changes require more bandwidth
+
+<Note>
+  Neuron Meet automatically adjusts screen share quality based on network conditions to ensure smooth delivery.
+</Note>
+
+## Privacy & Permissions
+
+### Browser Permissions
+
+Screen sharing requires browser permission:
+- The first time you share, your browser will ask for permission
+- You can grant permission temporarily (for this session) or always allow
+- You can revoke permissions in your browser settings at any time
+
+### What Participants See
+
+Participants see:
+- ✅ The exact content of your shared screen/window/tab
+- ✅ Any movement or changes in real-time
+- ❌ Your cursor (cursor is visible on your shared content)
+- ❌ Other screens if you're sharing only one
+- ❌ Minimized windows or background content
+
+<Warning>
+  Before sharing your screen:
+  - Close sensitive documents or emails
+  - Turn off desktop notifications
+  - Close private browser tabs or windows
+  - Check your desktop background and icons
+  - Mute notification sounds
+</Warning>
+
+## Host Controls
+
+Meeting hosts have special privileges:
+- Hosts can share their screen at any time
+- Depending on room settings, hosts may restrict who can screen share
+- Hosts can see who is currently presenting in the participants panel
+
+<Note>
+  Currently, all participants can screen share by default. Future versions may include host controls to limit screen sharing permissions.
+</Note>
+
+## Keyboard Shortcuts
+
+While there's no direct keyboard shortcut to start screen sharing (due to browser security), you can:
+- Press **Escape** to quickly stop sharing (in some browsers)
+- Use your operating system's keyboard shortcuts to switch between windows when sharing
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Screen Share Button is Grayed Out or Missing">
+    - Screen sharing may not be supported on mobile browsers
+    - Check browser compatibility (Chrome, Edge, Firefox, Safari 13+ recommended)
+    - Ensure you're on a desktop device
+    - Try refreshing the page
+  </Accordion>
+  
+  <Accordion title="Participants Can't See My Screen">
+    - Verify the screen share button is highlighted (blue/purple)
+    - Ask participants to check their view and refresh if needed
+    - Stop and restart screen sharing
+    - Check your internet connection
+  </Accordion>
+  
+  <Accordion title="Screen Share is Laggy or Frozen">
+    - Check your internet upload speed (screen sharing requires good upload bandwidth)
+    - Close other applications using bandwidth
+    - Try sharing a specific window instead of entire screen
+    - Reduce movement or animations in your shared content
+    - Ensure no large file downloads are running
+  </Accordion>
+  
+  <Accordion title="Screen Share Stopped Unexpectedly">
+    - You may have closed the window or tab you were sharing
+    - Browser may have stopped sharing due to privacy protections
+    - Check for browser updates or restart your browser
+    - Your internet connection may have dropped briefly
+  </Accordion>
+  
+  <Accordion title="Browser Doesn't Show Sharing Options">
+    - Grant screen sharing permissions in browser settings
+    - Some browsers require HTTPS for screen sharing
+    - Try a different browser (Chrome or Edge recommended)
+    - Update your browser to the latest version
+  </Accordion>
+</AccordionGroup>
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Prepare Before Sharing" icon="list-check">
+    Open all necessary windows and tabs beforehand. Close sensitive or irrelevant content to avoid distractions.
+  </Card>
+  
+  <Card title="Test Your Setup" icon="flask">
+    Do a test run before important presentations to ensure everything displays correctly.
+  </Card>
+  
+  <Card title="Use Speaker Notes Separately" icon="note-sticky">
+    If presenting slides, keep speaker notes on a separate monitor or device that you're not sharing.
+  </Card>
+  
+  <Card title="Disable Notifications" icon="bell-slash">
+    Turn on "Do Not Disturb" mode to prevent notification popups during screen sharing.
+  </Card>
+  
+  <Card title="Share Specific Windows" icon="window-restore">
+    When possible, share specific application windows instead of your entire screen for better privacy.
+  </Card>
+  
+  <Card title="Use High Contrast" icon="circle-half-stroke">
+    Ensure good contrast and readable font sizes so participants can easily see your content.
+  </Card>
+</CardGroup>
+
+## Browser Compatibility
+
+Screen sharing is supported on:
+- ✅ Google Chrome (recommended)
+- ✅ Microsoft Edge
+- ✅ Mozilla Firefox
+- ✅ Safari 13+ (macOS)
+- ⚠️ Mobile browsers (limited support)
+
+<Tip>
+  For the best screen sharing experience, use the latest version of Google Chrome or Microsoft Edge.
+</Tip>

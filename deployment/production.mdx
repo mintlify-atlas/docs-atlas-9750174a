@@ -1,0 +1,668 @@
+---
+title: Production Deployment
+description: Best practices and checklist for deploying Neuron Meet to production
+---
+
+## Production Checklist
+
+Before deploying to production, ensure you've completed these critical steps:
+
+<Steps>
+  <Step title="Security Configuration">
+    <AccordionGroup>
+      <Accordion title="Change JWT Secret" icon="key">
+        **CRITICAL:** Generate a strong, random JWT secret:
+        
+        ```bash
+        node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+        ```
+        
+        Update `.env`:
+        ```bash
+        JWT_SECRET="your-generated-secret-here"
+        ```
+        
+        <Warning>
+          Never use the default JWT secret in production! This would allow attackers to forge authentication tokens.
+        </Warning>
+      </Accordion>
+      
+      <Accordion title="Enable HTTPS/TLS" icon="lock">
+        All production deployments must use HTTPS:
+        
+        **Option 1: Reverse Proxy (nginx)**
+        ```nginx
+        server {
+            listen 443 ssl http2;
+            server_name yourdomain.com;
+            
+            ssl_certificate /path/to/cert.pem;
+            ssl_certificate_key /path/to/key.pem;
+            
+            # Client
+            location / {
+                root /path/to/client/dist;
+                try_files $uri $uri/ /index.html;
+            }
+            
+            # API
+            location /api {
+                proxy_pass http://localhost:3001;
+                proxy_http_version 1.1;
+                proxy_set_header Upgrade $http_upgrade;
+                proxy_set_header Connection 'upgrade';
+                proxy_set_header Host $host;
+                proxy_cache_bypass $http_upgrade;
+            }
+            
+            # WebSocket
+            location /socket.io {
+                proxy_pass http://localhost:3001;
+                proxy_http_version 1.1;
+                proxy_set_header Upgrade $http_upgrade;
+                proxy_set_header Connection "upgrade";
+                proxy_set_header Host $host;
+            }
+        }
+        ```
+        
+        **Option 2: Let's Encrypt (Certbot)**
+        ```bash
+        sudo apt install certbot python3-certbot-nginx
+        sudo certbot --nginx -d yourdomain.com
+        ```
+      </Accordion>
+      
+      <Accordion title="Secure Database" icon="database">
+        - Use strong database passwords (32+ random characters)
+        - Enable SSL/TLS for database connections
+        - Restrict database access to application servers only
+        - Use connection pooling (Supabase pooler or PgBouncer)
+        - Enable automatic backups
+        
+        **Supabase SSL Connection:**
+        ```bash
+        DATABASE_URL="postgresql://user:pass@host:6543/db?sslmode=require"
+        ```
+      </Accordion>
+      
+      <Accordion title="Environment Variables" icon="gear">
+        - Never commit `.env` files to version control
+        - Use platform-specific secrets management:
+          - **Vercel**: Environment Variables in dashboard
+          - **Railway**: Environment Variables in project settings
+          - **Docker**: Use `docker-compose.override.yml` (gitignored)
+        - Rotate secrets regularly
+        - Use different secrets for different environments
+      </Accordion>
+    </AccordionGroup>
+  </Step>
+  
+  <Step title="Database Optimization">
+    <AccordionGroup>
+      <Accordion title="Run Migrations" icon="database">
+        Apply all database migrations before starting the server:
+        
+        ```bash
+        npm run db:migrate
+        ```
+        
+        Verify schema is up to date:
+        ```bash
+        cd server
+        npx prisma migrate status
+        ```
+      </Accordion>
+      
+      <Accordion title="Enable Connection Pooling" icon="link">
+        For Supabase, use the Transaction pooler:
+        ```bash
+        DATABASE_URL="postgresql://postgres.xxx:pass@aws-0-region.pooler.supabase.com:6543/postgres"
+        ```
+        
+        For self-hosted, configure PgBouncer (see [Database Setup](/deployment/database-setup#connection-pooling)).
+      </Accordion>
+      
+      <Accordion title="Set Up Backups" icon="floppy-disk">
+        **Automated backups (cron):**
+        ```bash
+        # Add to crontab: daily backup at 2 AM
+        0 2 * * * /usr/bin/docker exec neuron-meet-db pg_dump -U neuronmeet neuronmeet | gzip > /backups/neuronmeet-$(date +\%Y\%m\%d).sql.gz
+        ```
+        
+        **Supabase:** Backups are automatic on paid plans.
+      </Accordion>
+    </AccordionGroup>
+  </Step>
+  
+  <Step title="WebRTC Configuration">
+    <AccordionGroup>
+      <Accordion title="Configure TURN Server" icon="network-wired">
+        For production, configure a TURN server to ensure connectivity in restrictive networks:
+        
+        ```bash
+        TURN_SERVER_URL=turn:turn.yourdomain.com:3478
+        TURN_USERNAME=your-turn-username
+        TURN_PASSWORD=your-turn-password
+        ```
+        
+        **Recommended TURN providers:**
+        - [Twilio Network Traversal Service](https://www.twilio.com/stun-turn) - $0.0004/GB
+        - [Xirsys](https://xirsys.com/) - Free tier available
+        - Self-hosted [coturn](https://github.com/coturn/coturn)
+        
+        <Note>
+          Without TURN, approximately 8-10% of users behind symmetric NATs or restrictive firewalls won't be able to connect.
+        </Note>
+      </Accordion>
+      
+      <Accordion title="Self-Host coturn (Optional)" icon="server">
+        Install coturn on your server:
+        
+        ```bash
+        sudo apt install coturn
+        ```
+        
+        Configure `/etc/turnserver.conf`:
+        ```bash
+        listening-port=3478
+        tls-listening-port=5349
+        listening-ip=YOUR_SERVER_IP
+        external-ip=YOUR_SERVER_IP
+        realm=yourdomain.com
+        server-name=yourdomain.com
+        
+        lt-cred-mech
+        user=username:password
+        
+        no-tcp-relay
+        no-multicast-peers
+        
+        cert=/path/to/cert.pem
+        pkey=/path/to/key.pem
+        ```
+        
+        Enable and start:
+        ```bash
+        sudo systemctl enable coturn
+        sudo systemctl start coturn
+        ```
+      </Accordion>
+    </AccordionGroup>
+  </Step>
+  
+  <Step title="Performance Optimization">
+    <AccordionGroup>
+      <Accordion title="Enable Production Mode" icon="gauge">
+        Set environment to production:
+        ```bash
+        NODE_ENV=production
+        ```
+        
+        This enables:
+        - Optimized builds
+        - Reduced logging
+        - Better error handling
+        - Performance optimizations
+      </Accordion>
+      
+      <Accordion title="Build Optimization" icon="code">
+        Build both client and server:
+        ```bash
+        npm run build
+        ```
+        
+        This runs:
+        - Client: Vite production build with minification and tree-shaking
+        - Server: NestJS compilation with TypeScript optimization
+      </Accordion>
+      
+      <Accordion title="Configure CDN (Optional)" icon="cloud">
+        For global distribution, serve static assets from a CDN:
+        
+        **Vercel:** Automatic edge caching
+        
+        **CloudFlare:**
+        1. Add your domain to CloudFlare
+        2. Enable "Cache Everything" page rule
+        3. Configure SSL/TLS to "Full (strict)"
+      </Accordion>
+    </AccordionGroup>
+  </Step>
+  
+  <Step title="Monitoring & Logging">
+    <AccordionGroup>
+      <Accordion title="Health Checks" icon="heart-pulse">
+        The server includes a health check endpoint:
+        ```
+        GET /api/health
+        ```
+        
+        Configure uptime monitoring:
+        - [UptimeRobot](https://uptimerobot.com/) (free)
+        - [Pingdom](https://www.pingdom.com/)
+        - Built-in: Railway health checks (configured in `railway.json`)
+      </Accordion>
+      
+      <Accordion title="Application Logs" icon="file-lines">
+        View logs by platform:
+        
+        **Docker:**
+        ```bash
+        docker-compose logs -f server
+        ```
+        
+        **Railway:**
+        View in Railway dashboard > Deployments > Logs
+        
+        **PM2 (VPS):**
+        ```bash
+        pm2 logs neuron-meet
+        ```
+      </Accordion>
+      
+      <Accordion title="Error Tracking" icon="bug">
+        Consider integrating error tracking:
+        
+        - [Sentry](https://sentry.io/) - Application error tracking
+        - [LogRocket](https://logrocket.com/) - Session replay
+        - [Datadog](https://www.datadoghq.com/) - Full-stack monitoring
+      </Accordion>
+    </AccordionGroup>
+  </Step>
+</Steps>
+
+## Platform-Specific Deployment
+
+### Docker Production Deployment
+
+<Steps>
+  <Step title="Update docker-compose.yml">
+    Ensure production settings in `docker-compose.yml`:
+    
+    ```yaml
+    environment:
+      NODE_ENV: production
+      JWT_SECRET: ${JWT_SECRET} # From .env file
+    ```
+  </Step>
+  
+  <Step title="Build and start services">
+    ```bash
+    docker-compose up -d --build
+    ```
+  </Step>
+  
+  <Step title="Verify services">
+    ```bash
+    docker-compose ps
+    ```
+    
+    All services should show "Up" status.
+  </Step>
+</Steps>
+
+### Vercel Deployment
+
+Vercel is configured via `vercel.json`:
+
+<Steps>
+  <Step title="Install Vercel CLI">
+    ```bash
+    npm install -g vercel
+    ```
+  </Step>
+  
+  <Step title="Set environment variables">
+    In Vercel dashboard, add:
+    - `VITE_API_URL` - Your backend API URL
+    - `VITE_WS_URL` - Your backend WebSocket URL
+  </Step>
+  
+  <Step title="Deploy">
+    ```bash
+    vercel --prod
+    ```
+  </Step>
+</Steps>
+
+<Note>
+  Vercel configuration includes security headers:
+  - `X-Content-Type-Options: nosniff`
+  - `X-Frame-Options: DENY`
+  - `X-XSS-Protection: 1; mode=block`
+</Note>
+
+### Railway Deployment
+
+Railway is configured via `railway.json`:
+
+<Steps>
+  <Step title="Connect repository">
+    1. Create Railway account
+    2. New Project > Deploy from GitHub
+    3. Select your repository
+  </Step>
+  
+  <Step title="Add PostgreSQL">
+    - Click "New Service" > Database > PostgreSQL
+    - Railway automatically provides `DATABASE_URL`
+  </Step>
+  
+  <Step title="Configure environment">
+    Add all [environment variables](/deployment/environment-variables) in Railway dashboard.
+  </Step>
+  
+  <Step title="Deploy">
+    Railway automatically deploys on push to main branch.
+    
+    Configuration from `railway.json`:
+    - Build: `npm run build:production`
+    - Start: `npm run start:production`
+    - Health check: `/api/health` (timeout: 100s)
+    - Restart policy: ON_FAILURE (max 10 retries)
+  </Step>
+</Steps>
+
+### Manual VPS Deployment
+
+For custom infrastructure:
+
+<Steps>
+  <Step title="Set up server">
+    Requirements:
+    - Ubuntu 20.04+ or similar
+    - Node.js 18+
+    - PostgreSQL 15+
+    - nginx (reverse proxy)
+    - PM2 (process manager)
+  </Step>
+  
+  <Step title="Install dependencies">
+    ```bash
+    # Node.js
+    curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+    sudo apt install -y nodejs
+    
+    # PM2
+    sudo npm install -g pm2
+    
+    # nginx
+    sudo apt install -y nginx
+    
+    # PostgreSQL
+    sudo apt install -y postgresql postgresql-contrib
+    ```
+  </Step>
+  
+  <Step title="Clone and build">
+    ```bash
+    git clone <repository-url>
+    cd neuron-meet
+    npm run install:all
+    npm run build
+    ```
+  </Step>
+  
+  <Step title="Configure PM2">
+    Create `ecosystem.config.js`:
+    
+    ```javascript
+    module.exports = {
+      apps: [{
+        name: 'neuron-meet',
+        cwd: './server',
+        script: 'dist/main.js',
+        instances: 'max',
+        exec_mode: 'cluster',
+        env: {
+          NODE_ENV: 'production',
+          PORT: 3001
+        }
+      }]
+    };
+    ```
+    
+    Start with PM2:
+    ```bash
+    pm2 start ecosystem.config.js
+    pm2 save
+    pm2 startup
+    ```
+  </Step>
+  
+  <Step title="Configure nginx">
+    See the nginx configuration in Step 1 > Security Configuration > Enable HTTPS/TLS
+    
+    Enable and restart:
+    ```bash
+    sudo ln -s /etc/nginx/sites-available/neuron-meet /etc/nginx/sites-enabled/
+    sudo nginx -t
+    sudo systemctl restart nginx
+    ```
+  </Step>
+</Steps>
+
+## Scaling Considerations
+
+### Horizontal Scaling
+
+For high traffic, scale across multiple servers:
+
+<AccordionGroup>
+  <Accordion title="Load Balancing" icon="scale-balanced">
+    Use nginx or a cloud load balancer:
+    
+    ```nginx
+    upstream backend {
+        least_conn;
+        server backend1.example.com:3001;
+        server backend2.example.com:3001;
+        server backend3.example.com:3001;
+    }
+    
+    server {
+        location /api {
+            proxy_pass http://backend;
+        }
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="WebSocket Sticky Sessions" icon="network-wired">
+    For WebSocket connections, enable sticky sessions:
+    
+    ```nginx
+    upstream backend {
+        ip_hash; # Sticky sessions based on IP
+        server backend1.example.com:3001;
+        server backend2.example.com:3001;
+    }
+    ```
+    
+    Or use Redis adapter for Socket.IO to share connections across servers.
+  </Accordion>
+  
+  <Accordion title="Database Scaling" icon="database">
+    - Enable read replicas for read-heavy workloads
+    - Use connection pooling (PgBouncer or Supabase pooler)
+    - Consider database sharding for very large scale
+    - Monitor query performance with Prisma logging
+  </Accordion>
+</AccordionGroup>
+
+### Vertical Scaling
+
+Optimize resource usage:
+
+- **CPU**: Use PM2 cluster mode to utilize all cores
+- **Memory**: Monitor with `pm2 monit` and adjust limits
+- **Database**: Increase connection pool size for high concurrency
+
+## Security Hardening
+
+<Warning>
+  These security measures are critical for production deployments.
+</Warning>
+
+<AccordionGroup>
+  <Accordion title="Rate Limiting" icon="gauge-high">
+    Protect against abuse with rate limiting:
+    
+    ```nginx
+    # In nginx config
+    limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;
+    
+    location /api {
+        limit_req zone=api burst=20 nodelay;
+        proxy_pass http://localhost:3001;
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="CORS Configuration" icon="globe">
+    In production, restrict CORS to your frontend domain:
+    
+    ```typescript
+    // server/src/main.ts
+    app.enableCors({
+      origin: process.env.FRONTEND_URL,
+      credentials: true
+    });
+    ```
+  </Accordion>
+  
+  <Accordion title="Security Headers" icon="shield">
+    Already configured in `vercel.json`. For nginx:
+    
+    ```nginx
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "DENY" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    ```
+  </Accordion>
+  
+  <Accordion title="Firewall Rules" icon="firewall">
+    Only expose necessary ports:
+    
+    ```bash
+    sudo ufw allow 22/tcp   # SSH
+    sudo ufw allow 80/tcp   # HTTP
+    sudo ufw allow 443/tcp  # HTTPS
+    sudo ufw enable
+    ```
+    
+    PostgreSQL and Node.js ports should only be accessible internally.
+  </Accordion>
+</AccordionGroup>
+
+## Post-Deployment Testing
+
+<Steps>
+  <Step title="Verify HTTPS">
+    Test SSL/TLS configuration:
+    ```bash
+    curl -I https://yourdomain.com
+    ```
+    
+    Check SSL grade at [SSL Labs](https://www.ssllabs.com/ssltest/)
+  </Step>
+  
+  <Step title="Test API endpoints">
+    ```bash
+    # Health check
+    curl https://yourdomain.com/api/health
+    
+    # Should return: {"status":"ok"}
+    ```
+  </Step>
+  
+  <Step title="Test WebRTC connectivity">
+    1. Create a test room
+    2. Join from different networks (WiFi, mobile)
+    3. Verify video/audio works
+    4. Test screen sharing
+    5. Verify TURN server is used in restrictive networks
+  </Step>
+  
+  <Step title="Load testing">
+    Use tools like Apache Bench or Artillery:
+    
+    ```bash
+    ab -n 1000 -c 10 https://yourdomain.com/api/health
+    ```
+  </Step>
+</Steps>
+
+## Maintenance
+
+### Updates and Patches
+
+<CodeGroup>
+```bash Pull latest changes
+git pull origin main
+npm run install:all
+npm run build
+```
+
+```bash Update dependencies
+npm update
+cd client && npm update
+cd ../server && npm update
+```
+
+```bash Database migrations
+npm run db:migrate
+```
+</CodeGroup>
+
+### Monitoring Checklist
+
+<Check>Server uptime and response times</Check>
+<Check>Database connection pool usage</Check>
+<Check>Disk space and database size</Check>
+<Check>SSL certificate expiration</Check>
+<Check>Error rates and exceptions</Check>
+<Check>Active concurrent users</Check>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="WebSocket connections failing">
+    - Verify nginx WebSocket proxy configuration
+    - Check CORS settings allow WebSocket upgrade
+    - Ensure sticky sessions are enabled for load balancing
+    - Check firewall allows WebSocket traffic
+  </Accordion>
+  
+  <Accordion title="Database connection errors">
+    - Verify connection string and credentials
+    - Check connection pool limits
+    - Ensure database is accessible from app server
+    - Review Prisma connection logs
+  </Accordion>
+  
+  <Accordion title="Video/audio not working">
+    - Verify TURN server is configured and accessible
+    - Check browser console for WebRTC errors
+    - Test with different networks (WiFi, mobile, VPN)
+    - Verify HTTPS is enabled (required for WebRTC)
+  </Accordion>
+</AccordionGroup>
+
+## Support
+
+For deployment issues:
+
+1. Check application logs
+2. Review [Environment Variables](/deployment/environment-variables)
+3. Verify [Database Setup](/deployment/database-setup)
+4. Consult platform documentation (Vercel, Railway, etc.)
+
+<Card title="Need Help?" icon="question">
+  If you encounter issues not covered in this guide, please open an issue on the GitHub repository with:
+  - Deployment platform
+  - Error logs
+  - Configuration (with secrets redacted)
+</Card>

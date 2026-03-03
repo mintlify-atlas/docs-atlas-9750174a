@@ -1,0 +1,202 @@
+---
+title: 'Video & Audio Controls'
+description: 'Manage your camera and microphone during meetings with intuitive controls'
+icon: 'video'
+---
+
+## Overview
+
+Neuron Meet provides powerful video and audio controls that let you manage your camera and microphone during meetings. Whether you're joining from a desktop or mobile device, you have full control over your media settings.
+
+## Before Joining a Meeting
+
+Before entering a meeting room, you'll see a preview screen that lets you test and configure your audio and video settings.
+
+### Pre-Join Setup
+
+<Steps>
+  <Step title="Access the Pre-Join Screen">
+    When you click a meeting link or enter a room code, you'll be taken to the pre-join screen where you can see a live preview of your camera.
+  </Step>
+  
+  <Step title="Test Your Camera">
+    You'll see yourself in the video preview. If your camera is working, you should see a live video feed (mirrored for a natural preview experience).
+  </Step>
+  
+  <Step title="Test Your Microphone">
+    Speak to ensure your microphone is working. Check your device settings if you don't see audio levels.
+  </Step>
+  
+  <Step title="Choose Your Devices (Optional)">
+    Click the **Settings** icon to select specific camera and microphone devices if you have multiple options available.
+  </Step>
+  
+  <Step title="Set Your Initial State">
+    Toggle your camera and microphone on or off before joining. Your selected state will carry into the meeting.
+  </Step>
+</Steps>
+
+<Note>
+  On the pre-join screen, guests must enter their name before joining. Authenticated users will see their display name automatically.
+</Note>
+
+### Device Selection
+
+If you have multiple cameras or microphones connected to your device:
+
+1. Click the **Settings** (gear) icon on the pre-join screen
+2. Select your preferred **Camera** from the dropdown
+3. Select your preferred **Microphone** from the dropdown
+4. The preview will update instantly to show the selected devices
+
+<Warning>
+  Make sure to grant browser permissions for camera and microphone access when prompted. Without these permissions, you won't be able to use video or audio features.
+</Warning>
+
+## During the Meeting
+
+Once you're in a meeting, you have real-time control over your audio and video from the control bar at the bottom of the screen.
+
+### Video Controls
+
+**Toggle Camera On/Off**
+- Click the **camera** button in the control bar
+- Keyboard shortcut: Press **V**
+- When your camera is off:
+  - Other participants see your avatar with your initials
+  - The camera button turns red
+  - You save bandwidth
+
+**Camera States**
+- **On** (blue button): Your live video is visible to all participants
+- **Off** (red button): Participants see your avatar instead of video
+
+### Audio Controls
+
+**Toggle Microphone On/Off**
+- Click the **microphone** button in the control bar
+- Keyboard shortcut: Press **M**
+- When muted:
+  - A red microphone icon appears on your video tile
+  - The microphone button turns red
+  - Other participants can see you're muted in the participants panel
+
+**Mute States**
+- **Unmuted** (blue button): Your audio is transmitted to all participants
+- **Muted** (red button): No audio is transmitted, and a muted indicator appears
+
+<Note>
+  Meeting hosts can mute individual participants. If you're muted by a host, you'll receive a notification and your microphone will be turned off.
+</Note>
+
+## Visual Indicators
+
+Neuron Meet provides several visual cues to help you understand audio and video status:
+
+### Speaking Indicator
+- When you or another participant speaks, a **green ring** appears around their video tile
+- A "Speaking" badge shows at the top-left of the active speaker's tile
+- This helps identify who's talking, especially in larger meetings
+
+### Muted Indicator
+- A **red microphone with a slash** icon appears on video tiles when someone is muted
+- Also visible in the participants panel
+
+### Camera Off Indicator
+- When someone's camera is off, you see their **avatar with initials** instead of video
+- A small camera-off icon may appear in the participants panel
+
+### Your Own Tile
+- Your video tile shows "(You)" next to your name
+- Your video preview is mirrored (horizontally flipped) for a natural self-view
+- Other participants see you non-mirrored
+
+## Keyboard Shortcuts
+
+<AccordionGroup>
+  <Accordion title="Audio & Video Shortcuts">
+    - **M** - Toggle microphone mute/unmute
+    - **V** - Toggle camera on/off
+    - **H** - Raise/lower hand
+    - **C** - Open/close chat panel
+    - **P** - Open/close participants panel
+    - **Escape** - Close open panels
+  </Accordion>
+</AccordionGroup>
+
+<Warning>
+  Keyboard shortcuts only work when you're not typing in a text input field (like the chat box).
+</Warning>
+
+## Mobile Experience
+
+On mobile devices, the video and audio controls work the same way but are optimized for touch:
+
+- **Larger touch targets** for easier tapping
+- Camera preview is still mirrored in the pre-join screen
+- Control bar remains accessible at the bottom of the screen
+- Swipe or tap to access chat and participants panels
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Mute When Not Speaking" icon="microphone-slash">
+    Reduce background noise by muting yourself when you're not actively speaking, especially in larger meetings.
+  </Card>
+  
+  <Card title="Test Before Important Meetings" icon="vial">
+    Use the pre-join screen to verify your camera and microphone are working properly before critical calls.
+  </Card>
+  
+  <Card title="Use Good Lighting" icon="lightbulb">
+    Position yourself facing a light source for better video quality. Avoid having bright windows behind you.
+  </Card>
+  
+  <Card title="Check Your Background" icon="image">
+    Use the pre-join preview to ensure your background is appropriate for the meeting.
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Camera Not Working">
+    - Check that your browser has permission to access your camera
+    - Verify no other application is using your camera
+    - Try refreshing the page and rejoining
+    - Check device settings in the pre-join screen
+    - Ensure your camera is properly connected (for external cameras)
+  </Accordion>
+  
+  <Accordion title="Microphone Not Working">
+    - Verify browser permissions for microphone access
+    - Check system audio settings and ensure the correct device is selected
+    - Test microphone in other applications to rule out hardware issues
+    - Try selecting a different microphone in the device settings
+  </Accordion>
+  
+  <Accordion title="Poor Video Quality">
+    - Check your internet connection speed
+    - Close other applications using bandwidth
+    - Ensure good lighting in your environment
+    - Consider turning off your camera temporarily to improve audio quality on slow connections
+  </Accordion>
+  
+  <Accordion title="Echo or Feedback">
+    - Use headphones to prevent audio feedback
+    - Ask other participants to mute when not speaking
+    - Check for multiple devices/tabs connected to the same meeting
+  </Accordion>
+</AccordionGroup>
+
+## Privacy & Security
+
+- Your camera and microphone are **never accessed** without your explicit permission
+- You have **full control** to turn off video and audio at any time
+- When your camera is off, no video data is transmitted
+- When muted, no audio data is transmitted
+- All media streams use encrypted WebRTC connections
+
+<Tip>
+  Your video feed is mirrored only in your own preview - other participants see you in the correct orientation.
+</Tip>

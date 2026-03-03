@@ -1,0 +1,375 @@
+---
+title: 'Room Management'
+description: 'Create, configure, and manage meeting rooms with powerful host controls'
+icon: 'door-open'
+---
+
+## Overview
+
+Neuron Meet gives meeting hosts complete control over their meeting rooms. From creating a room to managing participants and settings, hosts have powerful tools to ensure productive and secure meetings.
+
+## Creating a Meeting Room
+
+Authenticated users can create meeting rooms instantly.
+
+<Steps>
+  <Step title="Navigate to the Home Page">
+    Go to the Neuron Meet homepage while logged in.
+  </Step>
+  
+  <Step title="Click Create Meeting">
+    Click the **"Create Meeting"** or **"New Meeting"** button.
+  </Step>
+  
+  <Step title="Configure Room Settings (Optional)">
+    Set your room preferences:
+    - Room name/title
+    - Maximum participants (default: 50-100)
+    - Waiting room (enable/disable)
+    - Other privacy settings
+  </Step>
+  
+  <Step title="Create the Room">
+    Click **"Create"** to generate your meeting room.
+  </Step>
+  
+  <Step title="Share the Room Code">
+    You'll receive a unique **room code** (format: `xxx-xxx-xxx`). Share this code or the full meeting link with participants.
+  </Step>
+</Steps>
+
+<Note>
+  Room codes are unique 9-character strings in the format `abc-def-ghi` (three groups of three lowercase letters). They're easy to read over the phone and share via email or messaging.
+</Note>
+
+## Room Codes & Links
+
+### Room Code Format
+
+- **Format**: `xxx-xxx-xxx` (e.g., `abc-def-ghi`)
+- **Length**: 9 lowercase letters separated by hyphens
+- **Uniqueness**: Each code is unique and generated randomly
+- **Easy to share**: Simple format makes it easy to type or say aloud
+
+### Meeting Links
+
+Every room has a unique link:
+
+```
+https://your-domain.com/join/abc-def-ghi
+```
+
+Participants can:
+- Click the link to go directly to the pre-join screen
+- Or enter the room code manually on the home page
+
+### Sharing the Meeting
+
+As a host, you can easily copy the meeting link:
+
+1. During the meeting, look at the control bar (bottom left)
+2. See your **room code** displayed
+3. Click the **copy icon** next to the code
+4. The full meeting link is copied to your clipboard
+5. Share via email, chat, or messaging apps
+
+<Tip>
+  The meeting link and room code are shown at the bottom-left of the control bar during the meeting. Click the copy icon for instant clipboard access.
+</Tip>
+
+## Host Privileges
+
+As the meeting host (the creator of the room), you have special privileges:
+
+### Participant Management
+
+**View All Participants**
+- See all participants in the **Participants Panel**
+- Host status indicated by a **crown icon** next to your name
+- See participant states: muted, video off, hand raised, presenting
+
+**Mute Participants**
+1. Open the participants panel (**P** or click participants icon)
+2. Hover over a participant's entry
+3. Click the **three dots** (more options) menu
+4. Select **"Mute"**
+
+The participant will:
+- Be muted immediately
+- Receive a notification that they were muted by the host
+- See their microphone turn red
+
+**Remove Participants**
+1. Open the participants panel
+2. Hover over a participant's entry
+3. Click the **three dots** menu
+4. Select **"Remove"** (shown in red)
+
+The participant will:
+- Be disconnected from the meeting immediately
+- See a "Removed by host" message
+- Need to rejoin using the room code (if the room isn't locked)
+
+<Warning>
+  Removing a participant disconnects them from the meeting. They can rejoin if the room is not locked. Use this feature responsibly.
+</Warning>
+
+### Room Lock Controls
+
+Hosts can lock the meeting room to prevent new participants from joining:
+
+**Locking the Room**
+- Prevents new participants from joining
+- Existing participants remain in the meeting
+- Anyone trying to join will see a "Room is locked" error
+
+**Use cases for locking:**
+- After all expected participants have joined
+- During sensitive discussions
+- To prevent meeting disruptions or "Zoom bombing"
+
+<Note>
+  Room locking is a host-only feature. Regular participants cannot lock or unlock rooms.
+</Note>
+
+### Room Settings
+
+Hosts can configure various room settings (some may be set during creation, others during the meeting):
+
+<AccordionGroup>
+  <Accordion title="Allow Chat" icon="message">
+    **Default**: Enabled
+    
+    Enable or disable the in-meeting chat feature. When disabled, participants cannot send or view messages.
+  </Accordion>
+  
+  <Accordion title="Allow Screen Share" icon="desktop">
+    **Default**: Enabled
+    
+    Control whether participants can share their screens. When disabled, only the host can present.
+  </Accordion>
+  
+  <Accordion title="Allow Guest Access" icon="user">
+    **Default**: Enabled
+    
+    Permit unauthenticated users to join meetings. When disabled, only logged-in users can enter.
+  </Accordion>
+  
+  <Accordion title="Waiting Room" icon="hourglass">
+    **Default**: Disabled
+    
+    Require participants to wait in a lobby until the host admits them. Provides extra security for sensitive meetings.
+  </Accordion>
+  
+  <Accordion title="Mute Participants on Join" icon="microphone-slash">
+    **Default**: Disabled
+    
+    Automatically mute all participants when they join. Useful for large webinars or presentations.
+  </Accordion>
+  
+  <Accordion title="Maximum Participants" icon="users">
+    **Default**: 50-100 (configurable)
+    
+    Set a cap on how many people can join the meeting. Prevents overcrowding and ensures performance.
+  </Accordion>
+</AccordionGroup>
+
+## Participant States & Indicators
+
+Hosts can see detailed information about each participant:
+
+### Status Icons
+
+- **Crown icon** 👑 - Meeting host
+- **Microphone with slash** - Participant is muted
+- **Camera with slash** - Participant's video is off
+- **Yellow hand** - Participant has raised their hand
+- **"Presenting" label** - Participant is screen sharing
+
+### Participant Information
+
+For each participant, hosts can see:
+- Display name
+- Audio status (muted/unmuted)
+- Video status (on/off)
+- Hand raised status
+- Whether they're screen sharing
+- Avatar or video preview
+
+## Ending the Meeting
+
+As the host, you can end the meeting for everyone:
+
+<Steps>
+  <Step title="Click the Leave Button">
+    Click the red **phone** icon in the control bar.
+  </Step>
+  
+  <Step title="Choose 'End Meeting' (if available)">
+    Some implementations may show options to "Leave Meeting" (you leave, others stay) or "End Meeting" (everyone is disconnected).
+  </Step>
+</Steps>
+
+When a meeting ends:
+- All participants are disconnected
+- The room becomes inactive
+- Chat messages are cleared
+- The room code may be deactivated (depending on settings)
+
+<Note>
+  If the host leaves without formally ending the meeting, participants may remain in the room, but some host-only features will be unavailable.
+</Note>
+
+## Room Lifecycle
+
+### Active Rooms
+
+- Created when a host starts a new meeting
+- Active as long as participants are present or the host hasn't ended it
+- Participants can join using the room code
+- All features are functional
+
+### Inactive/Ended Rooms
+
+- Meetings that have been formally ended
+- Room code may become invalid
+- Cannot be rejoined without creating a new meeting
+- Associated data (messages, participants) is cleared
+
+<Tip>
+  Room codes are stored in the database along with room metadata, settings, and participant history for analytics and record-keeping.
+</Tip>
+
+## Managing Large Meetings
+
+For meetings with many participants:
+
+### Video Grid Pagination
+
+- The video grid shows up to **9 participants** per page (3x3 grid)
+- Navigation controls appear when there are more than 9 people
+- Click **left/right arrows** or **page dots** to view additional participants
+
+### Participant List
+
+- Open the participants panel to see **everyone** in the meeting
+- Scroll through the list to find specific people
+- Participant count is shown in the panel header: "Participants (23)"
+
+### Best Practices for Large Meetings
+
+<CardGroup cols={2}>
+  <Card title="Mute on Join" icon="microphone-slash">
+    Enable "Mute participants on join" to reduce background noise in large meetings.
+  </Card>
+  
+  <Card title="Disable Chat for Webinars" icon="comment-slash">
+    For one-way presentations, consider disabling chat to keep focus on the speaker.
+  </Card>
+  
+  <Card title="Use Waiting Room" icon="door-closed">
+    Enable waiting room for added security and to control when participants enter.
+  </Card>
+  
+  <Card title="Limit Screen Sharing" icon="desktop">
+    Restrict screen sharing to hosts only during formal presentations.
+  </Card>
+</CardGroup>
+
+## Room Security
+
+### Protecting Your Meeting
+
+<Steps>
+  <Step title="Use Unique Room Codes">
+    Each meeting has a unique, randomly generated code that's hard to guess.
+  </Step>
+  
+  <Step title="Lock the Room After Everyone Joins">
+    Prevent unexpected guests by locking the room once all expected participants are present.
+  </Step>
+  
+  <Step title="Enable Waiting Room for Sensitive Meetings">
+    Manually admit each participant to ensure only authorized people join.
+  </Step>
+  
+  <Step title="Monitor the Participants Panel">
+    Regularly check who's in the meeting. Remove unfamiliar participants immediately.
+  </Step>
+  
+  <Step title="Don't Share Room Codes Publicly">
+    Send room codes via secure channels (email, private messages) instead of posting them publicly.
+  </Step>
+</Steps>
+
+<Warning>
+  If you notice an unauthorized participant, use the "Remove" option in the participants panel immediately. Then lock the room to prevent them from rejoining.
+</Warning>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Can't Create a Room">
+    - Ensure you're logged in (guests cannot create rooms)
+    - Check your account permissions
+    - Verify your internet connection
+    - Try refreshing the page
+  </Accordion>
+  
+  <Accordion title="Host Controls Not Visible">
+    - Confirm you're the meeting host (look for the crown icon next to your name)
+    - Refresh the meeting page
+    - Ensure you created the room or were designated as host
+  </Accordion>
+  
+  <Accordion title="Participants Can't Join">
+    - Verify the room code is correct
+    - Check if the room is locked (unlock it if needed)
+    - Ensure the room hasn't reached max participants
+    - Confirm the room is still active and hasn't ended
+  </Accordion>
+  
+  <Accordion title="Can't Remove a Participant">
+    - Verify you're the host (only hosts can remove participants)
+    - Try clicking the three dots menu again
+    - Refresh the page if the menu doesn't appear
+  </Accordion>
+  
+  <Accordion title="Room Code Not Copying">
+    - Click the copy icon next to the room code
+    - Manually copy the code if clipboard access is blocked
+    - Check browser permissions for clipboard access
+  </Accordion>
+</AccordionGroup>
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Set Clear Room Names" icon="signature">
+    Use descriptive room names so participants know what the meeting is about.
+  </Card>
+  
+  <Card title="Send Invites in Advance" icon="calendar">
+    Share the meeting link ahead of time so participants can prepare and join on time.
+  </Card>
+  
+  <Card title="Test Before Important Meetings" icon="vial">
+    Create a test room to familiarize yourself with host controls before critical meetings.
+  </Card>
+  
+  <Card title="Monitor Participant List" icon="eye">
+    Keep the participants panel open to see who's in the meeting and their status.
+  </Card>
+  
+  <Card title="Communicate Room Rules" icon="megaphone">
+    At the start of the meeting, explain guidelines (e.g., mute when not speaking, use hand raise).
+  </Card>
+  
+  <Card title="End Meetings Properly" icon="door-open">
+    Use the "End Meeting" option to ensure all participants are disconnected and the room is closed.
+  </Card>
+</CardGroup>
+
+<Tip>
+  As a host, you can see everyone's connection status and participation. Use the participants panel as your "control center" during meetings.
+</Tip>

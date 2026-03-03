@@ -1,0 +1,226 @@
+---
+title: Deployment Overview
+description: Learn how to deploy Neuron Meet to production
+---
+
+## Introduction
+
+Neuron Meet is a full-stack video conferencing application built with NestJS (backend) and React + Vite (frontend). This guide covers various deployment options to get your instance running in production.
+
+## Architecture
+
+Neuron Meet consists of three main components:
+
+- **Frontend (Client)**: React application built with Vite, handles UI and WebRTC connections
+- **Backend (Server)**: NestJS application with REST API and WebSocket support for real-time communication
+- **Database**: PostgreSQL database managed with Prisma ORM
+
+```
+┌─────────────┐
+│   Client    │ (React + Vite)
+│  Port 80    │
+└──────┬──────┘
+       │
+       │ HTTP/WS
+       │
+┌──────▼──────┐
+│   Server    │ (NestJS)
+│  Port 3001  │
+└──────┬──────┘
+       │
+       │ Prisma
+       │
+┌──────▼──────┐
+│  PostgreSQL │
+│  Port 5432  │
+└─────────────┘
+```
+
+## Deployment Options
+
+<CardGroup cols={2}>
+  <Card title="Docker" icon="docker" href="#docker-deployment">
+    Deploy the entire stack with Docker Compose for easy orchestration
+  </Card>
+  
+  <Card title="Vercel" icon="triangle" href="#vercel-deployment">
+    Deploy the frontend to Vercel's edge network
+  </Card>
+  
+  <Card title="Railway" icon="train" href="#railway-deployment">
+    Deploy the full application on Railway with automatic provisioning
+  </Card>
+  
+  <Card title="Manual" icon="server" href="#manual-deployment">
+    Deploy to your own VPS or server infrastructure
+  </Card>
+</CardGroup>
+
+## Prerequisites
+
+Before deploying Neuron Meet, ensure you have:
+
+<Check>Node.js 18.0.0 or higher</Check>
+<Check>PostgreSQL 15 or higher (or a Supabase account)</Check>
+<Check>Domain name with SSL/TLS certificate (recommended for production)</Check>
+<Check>TURN server credentials (optional but recommended for production)</Check>
+
+## Docker Deployment
+
+The quickest way to deploy Neuron Meet is using Docker Compose:
+
+<Steps>
+  <Step title="Clone the repository">
+    ```bash
+    git clone <repository-url>
+    cd neuron-meet
+    ```
+  </Step>
+
+  <Step title="Configure environment variables">
+    Copy the example environment file and update the values:
+    ```bash
+    cp .env.example .env
+    ```
+    
+    <Warning>
+      Make sure to change `JWT_SECRET` to a strong random value in production!
+    </Warning>
+  </Step>
+
+  <Step title="Start the services">
+    ```bash
+    docker-compose up -d
+    ```
+    
+    This will start:
+    - PostgreSQL on port 5432
+    - Backend server on port 3001
+    - Frontend client on port 80
+  </Step>
+
+  <Step title="Access the application">
+    Open your browser and navigate to `http://localhost` (or your server's IP address)
+  </Step>
+</Steps>
+
+## Vercel Deployment
+
+Vercel is ideal for deploying the frontend client:
+
+<Steps>
+  <Step title="Install Vercel CLI">
+    ```bash
+    npm install -g vercel
+    ```
+  </Step>
+
+  <Step title="Deploy the client">
+    ```bash
+    vercel
+    ```
+    
+    The configuration is already set in `vercel.json` which includes:
+    - Client build from `client/dist`
+    - SPA routing rewrites
+    - Security headers (X-Content-Type-Options, X-Frame-Options, X-XSS-Protection)
+  </Step>
+
+  <Step title="Configure environment variables">
+    Set the following environment variables in the Vercel dashboard:
+    - `VITE_API_URL`: Your backend API URL
+    - `VITE_WS_URL`: Your backend WebSocket URL
+  </Step>
+</Steps>
+
+<Note>
+  You'll need to deploy the backend separately (Railway, VPS, etc.) and update the frontend environment variables to point to it.
+</Note>
+
+## Railway Deployment
+
+Railway can host the full stack application:
+
+<Steps>
+  <Step title="Create a Railway account">
+    Sign up at [railway.app](https://railway.app)
+  </Step>
+
+  <Step title="Create a new project">
+    - Add a PostgreSQL database service
+    - Add a new service from your GitHub repository
+  </Step>
+
+  <Step title="Configure environment variables">
+    Set all required [environment variables](/deployment/environment-variables) in the Railway dashboard.
+    
+    Railway will automatically provide `DATABASE_URL` from the PostgreSQL service.
+  </Step>
+
+  <Step title="Deploy">
+    Railway will automatically deploy based on the configuration in `railway.json`:
+    - Build command: `npm run build:production`
+    - Start command: `npm run start:production`
+    - Health check: `/api/health`
+  </Step>
+</Steps>
+
+## Manual Deployment
+
+For custom infrastructure:
+
+<Steps>
+  <Step title="Set up PostgreSQL">
+    Install PostgreSQL 15+ or use a managed service like Supabase.
+    
+    See [Database Setup](/deployment/database-setup) for details.
+  </Step>
+
+  <Step title="Install dependencies">
+    ```bash
+    npm run install:all
+    ```
+  </Step>
+
+  <Step title="Configure environment">
+    Create a `.env` file with all [required variables](/deployment/environment-variables).
+  </Step>
+
+  <Step title="Run database migrations">
+    ```bash
+    npm run db:migrate
+    ```
+  </Step>
+
+  <Step title="Build the application">
+    ```bash
+    npm run build
+    ```
+  </Step>
+
+  <Step title="Start the server">
+    ```bash
+    npm start
+    ```
+  </Step>
+
+  <Step title="Serve the client">
+    Use nginx, Apache, or any static file server to serve the `client/dist` directory.
+  </Step>
+</Steps>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Environment Variables" icon="gear" href="/deployment/environment-variables">
+    Configure all required environment variables
+  </Card>
+  
+  <Card title="Database Setup" icon="database" href="/deployment/database-setup">
+    Set up and migrate your PostgreSQL database
+  </Card>
+  
+  <Card title="Production Checklist" icon="check" href="/deployment/production">
+    Secure and optimize for production
+  </Card>
+</CardGroup>

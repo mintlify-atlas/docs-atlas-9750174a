@@ -1,0 +1,112 @@
+---
+title: 'Register'
+api: 'POST /auth/register'
+---
+
+Register a new user account in Neuron Meet.
+
+## Request Body
+
+<ParamField body="email" type="string" required>
+  User's email address. Must be a valid email format.
+</ParamField>
+
+<ParamField body="password" type="string" required>
+  User's password. Must be between 8 and 100 characters.
+</ParamField>
+
+<ParamField body="displayName" type="string" required>
+  User's display name. Must be between 2 and 50 characters.
+</ParamField>
+
+## Response
+
+<ResponseField name="user" type="object">
+  The newly created user object.
+  
+  <ResponseField name="id" type="string">
+    Unique identifier for the user.
+  </ResponseField>
+  
+  <ResponseField name="email" type="string">
+    User's email address.
+  </ResponseField>
+  
+  <ResponseField name="name" type="string">
+    User's name.
+  </ResponseField>
+  
+  <ResponseField name="displayName" type="string">
+    User's display name.
+  </ResponseField>
+  
+  <ResponseField name="avatarUrl" type="string | null">
+    URL to user's avatar image, if set.
+  </ResponseField>
+  
+  <ResponseField name="createdAt" type="string">
+    ISO 8601 timestamp of when the user was created.
+  </ResponseField>
+</ResponseField>
+
+<ResponseField name="accessToken" type="string">
+  JWT access token for authenticating subsequent requests. Valid for 7 days.
+</ResponseField>
+
+## Example Request
+
+```bash
+curl -X POST https://api.neuronmeet.com/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "password": "securePassword123",
+    "displayName": "John Doe"
+  }'
+```
+
+## Example Response
+
+```json
+{
+  "user": {
+    "id": "clx1234567890abcdef",
+    "email": "user@example.com",
+    "name": "John Doe",
+    "displayName": "John Doe",
+    "avatarUrl": null,
+    "createdAt": "2024-03-15T10:30:00.000Z"
+  },
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+## Error Responses
+
+### 409 Conflict
+
+Returned when the email address is already registered.
+
+```json
+{
+  "statusCode": 409,
+  "message": "Email already registered",
+  "error": "Conflict"
+}
+```
+
+### 400 Bad Request
+
+Returned when validation fails for any field.
+
+```json
+{
+  "statusCode": 400,
+  "message": [
+    "email must be an email",
+    "password must be longer than or equal to 8 characters",
+    "displayName must be longer than or equal to 2 characters"
+  ],
+  "error": "Bad Request"
+}
+```

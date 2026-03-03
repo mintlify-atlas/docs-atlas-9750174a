@@ -1,0 +1,416 @@
+---
+title: Database Setup
+description: Set up and configure PostgreSQL for Neuron Meet
+---
+
+## Overview
+
+Neuron Meet uses PostgreSQL as its database, managed through Prisma ORM. This guide covers setting up the database locally with Docker or using a managed service like Supabase.
+
+## Database Schema
+
+The application uses the following data models:
+
+### Core Models
+
+<AccordionGroup>
+  <Accordion title="User">
+    Stores user accounts and authentication data.
+    
+    **Fields:**
+    - `id` - Unique identifier (CUID)
+    - `email` - User email (unique, indexed)
+    - `name` - Full name
+    - `displayName` - Optional display name
+    - `password` - Bcrypt hashed password
+    - `avatarUrl` - Optional avatar image URL
+    - `createdAt` - Account creation timestamp
+    - `updatedAt` - Last update timestamp
+    
+    **Relations:**
+    - Hosts multiple rooms
+    - Participates in multiple rooms
+    - Sends multiple messages
+  </Accordion>
+  
+  <Accordion title="Room">
+    Video conference rooms.
+    
+    **Fields:**
+    - `id` - Unique identifier (CUID)
+    - `code` - Unique room code (indexed)
+    - `name` - Room name
+    - `hostId` - User ID of the host (indexed)
+    - `isActive` - Whether the room is currently active
+    - `isLocked` - Whether new participants are blocked
+    - `startedAt` - Room start time
+    - `endedAt` - Room end time (nullable)
+    - `createdAt` - Creation timestamp
+    - `updatedAt` - Last update timestamp
+    
+    **Relations:**
+    - Belongs to one host (User)
+    - Has one RoomSettings
+    - Has multiple participants
+    - Has multiple messages
+  </Accordion>
+  
+  <Accordion title="RoomSettings">
+    Configuration for individual rooms.
+    
+    **Fields:**
+    - `id` - Unique identifier (CUID)
+    - `roomId` - Associated room ID (unique)
+    - `allowChat` - Enable/disable chat (default: true)
+    - `allowScreenShare` - Enable/disable screen sharing (default: true)
+    - `allowGuestAccess` - Allow guest users (default: true)
+    - `waitingRoom` - Enable waiting room (default: false)
+    - `muteParticipantsOnJoin` - Auto-mute new participants (default: false)
+    - `isLocked` - Lock room (default: false)
+    - `maxParticipants` - Maximum participants (default: 100)
+    
+    **Relations:**
+    - Belongs to one room (cascade delete)
+  </Accordion>
+  
+  <Accordion title="Participant">
+    Tracks users and guests in rooms.
+    
+    **Fields:**
+    - `id` - Unique identifier (CUID)
+    - `roomId` - Room ID (indexed)
+    - `userId` - User ID if authenticated (nullable, indexed)
+    - `guestName` - Name if joining as guest (nullable)
+    - `isActive` - Whether currently in the room
+    - `isHost` - Whether this is the host participant
+    - `joinedAt` - Join timestamp
+    - `leftAt` - Leave timestamp (nullable)
+    
+    **Relations:**
+    - Belongs to one room (cascade delete)
+    - Optionally belongs to one user
+  </Accordion>
+  
+  <Accordion title="Message">
+    Chat messages in rooms.
+    
+    **Fields:**
+    - `id` - Unique identifier (CUID)
+    - `roomId` - Room ID (indexed)
+    - `userId` - User ID if authenticated (nullable)
+    - `senderName` - Sender name (nullable)
+    - `content` - Message content
+    - `type` - Message type: TEXT, SYSTEM, or FILE
+    - `createdAt` - Timestamp (indexed)
+    
+    **Relations:**
+    - Belongs to one room (cascade delete)
+    - Optionally belongs to one user
+  </Accordion>
+</AccordionGroup>
+
+## Option 1: Local PostgreSQL with Docker
+
+The fastest way to set up PostgreSQL locally is using Docker.
+
+<Steps>
+  <Step title="Start PostgreSQL with Docker Compose">
+    The project includes a Docker Compose configuration for PostgreSQL:
+    
+    ```bash
+    docker-compose up -d postgres
+    ```
+    
+    This starts:
+    - PostgreSQL 15 Alpine
+    - Container name: `neuron-meet-db`
+    - User: `neuronmeet`
+    - Password: `neuronmeet`
+    - Database: `neuronmeet`
+    - Port: `5432`
+    - Health check: runs every 5 seconds
+  </Step>
+  
+  <Step title="Configure environment variables">
+    Update your `.env` file with the local database URLs:
+    
+    ```bash
+    DATABASE_URL="postgresql://neuronmeet:neuronmeet@localhost:5432/neuronmeet"
+    DIRECT_URL="postgresql://neuronmeet:neuronmeet@localhost:5432/neuronmeet"
+    ```
+  </Step>
+  
+  <Step title="Generate Prisma client">
+    ```bash
+    npm run db:generate
+    ```
+    
+    This generates the Prisma client based on your schema.
+  </Step>
+  
+  <Step title="Run migrations">
+    ```bash
+    npm run db:migrate
+    ```
+    
+    This creates all database tables and relationships.
+  </Step>
+  
+  <Step title="Verify the setup">
+    Check that the database is running:
+    
+    ```bash
+    docker ps | grep neuron-meet-db
+    ```
+    
+    You can also connect to the database:
+    
+    ```bash
+    docker exec -it neuron-meet-db psql -U neuronmeet
+    ```
+  </Step>
+</Steps>
+
+<Tip>
+  PostgreSQL data is persisted in a Docker volume named `postgres_data`, so it survives container restarts.
+</Tip>
+
+## Option 2: Supabase (Managed PostgreSQL)
+
+Supabase provides a managed PostgreSQL database with additional features.
+
+<Steps>
+  <Step title="Create a Supabase project">
+    1. Sign up at [supabase.com](https://supabase.com)
+    2. Create a new project
+    3. Choose a region close to your users
+    4. Set a strong database password
+  </Step>
+  
+  <Step title="Get connection strings">
+    Navigate to **Project Settings** → **Database** → **Connection string**:
+    
+    **For DATABASE_URL** (Transaction pooler):
+    ```
+    postgresql://postgres.[project-ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres
+    ```
+    
+    **For DIRECT_URL** (Session pooler):
+    ```
+    postgresql://postgres.[project-ref]:[password]@aws-0-[region].pooler.supabase.com:5432/postgres
+    ```
+  </Step>
+  
+  <Step title="Configure environment variables">
+    Update your `.env` file with the Supabase connection strings:
+    
+    ```bash
+    DATABASE_URL="postgresql://postgres.xxxxx:[password]@aws-0-[region].pooler.supabase.com:6543/postgres"
+    DIRECT_URL="postgresql://postgres.xxxxx:[password]@aws-0-[region].pooler.supabase.com:5432/postgres"
+    ```
+    
+    <Warning>
+      Replace `[password]`, `[project-ref]`, and `[region]` with your actual values.
+    </Warning>
+  </Step>
+  
+  <Step title="Generate Prisma client">
+    ```bash
+    npm run db:generate
+    ```
+  </Step>
+  
+  <Step title="Run migrations">
+    ```bash
+    npm run db:migrate
+    ```
+  </Step>
+</Steps>
+
+<Note>
+  Supabase's free tier includes:
+  - 500 MB database space
+  - Automatic backups
+  - Direct access to PostgreSQL
+  - No credit card required
+</Note>
+
+## Prisma Commands
+
+Common database operations using Prisma:
+
+### Generate Client
+
+Generate the Prisma Client after schema changes:
+
+```bash
+npm run db:generate
+```
+
+This runs `prisma generate` in the server directory.
+
+### Push Schema (Development)
+
+Push schema changes directly to the database without creating migrations:
+
+```bash
+npm run db:push
+```
+
+This runs `prisma db push` - useful for rapid prototyping.
+
+<Warning>
+  `db:push` is destructive and may result in data loss. Use migrations in production.
+</Warning>
+
+### Run Migrations (Production)
+
+Create and apply migrations:
+
+```bash
+npm run db:migrate
+```
+
+This runs `prisma migrate dev` which:
+1. Creates a new migration file
+2. Applies it to the database
+3. Regenerates the Prisma client
+
+### Prisma Studio (Database GUI)
+
+Open a visual database editor:
+
+```bash
+cd server
+npm run db:studio
+```
+
+This opens Prisma Studio at `http://localhost:5555` where you can:
+- Browse all tables
+- View and edit data
+- Test queries
+
+## Connection Pooling
+
+For production deployments, consider connection pooling:
+
+### With Supabase
+
+Supabase provides built-in connection pooling:
+- **Transaction pooler** (port 6543): For serverless/edge functions
+- **Session pooler** (port 5432): For long-running servers
+
+Use Transaction pooler for `DATABASE_URL` and Session pooler for `DIRECT_URL`.
+
+### With PgBouncer
+
+For self-hosted PostgreSQL, use PgBouncer:
+
+```bash
+# Install PgBouncer
+sudo apt install pgbouncer
+
+# Configure /etc/pgbouncer/pgbouncer.ini
+[databases]
+neuronmeet = host=localhost port=5432 dbname=neuronmeet
+
+[pgbouncer]
+listen_addr = *
+listen_port = 6432
+auth_file = /etc/pgbouncer/userlist.txt
+pool_mode = transaction
+max_client_conn = 100
+default_pool_size = 20
+```
+
+Then use port 6432 in your `DATABASE_URL`.
+
+## Backup and Restore
+
+### Backup Database
+
+<CodeGroup>
+```bash Docker
+docker exec neuron-meet-db pg_dump -U neuronmeet neuronmeet > backup.sql
+```
+
+```bash Supabase/Remote
+pg_dump "postgresql://postgres.xxxxx:[password]@aws-0-[region].pooler.supabase.com:5432/postgres" > backup.sql
+```
+</CodeGroup>
+
+### Restore Database
+
+<CodeGroup>
+```bash Docker
+docker exec -i neuron-meet-db psql -U neuronmeet neuronmeet < backup.sql
+```
+
+```bash Supabase/Remote
+psql "postgresql://postgres.xxxxx:[password]@aws-0-[region].pooler.supabase.com:5432/postgres" < backup.sql
+```
+</CodeGroup>
+
+## Troubleshooting
+
+### Connection Refused
+
+<AccordionGroup>
+  <Accordion title="Docker: Cannot connect to localhost:5432">
+    **Check if PostgreSQL container is running:**
+    ```bash
+    docker ps | grep neuron-meet-db
+    ```
+    
+    **View container logs:**
+    ```bash
+    docker logs neuron-meet-db
+    ```
+    
+    **Restart the container:**
+    ```bash
+    docker-compose restart postgres
+    ```
+  </Accordion>
+  
+  <Accordion title="Supabase: Connection timeout">
+    - Verify your IP is allowed in Supabase dashboard
+    - Check if you're using the correct connection string
+    - Ensure you're using the pooler URL (not direct connection) for serverless
+  </Accordion>
+</AccordionGroup>
+
+### Migration Errors
+
+<AccordionGroup>
+  <Accordion title="Migration failed: database schema is not empty">
+    Reset the database and migrations:
+    ```bash
+    cd server
+    npx prisma migrate reset
+    ```
+    
+    <Warning>
+      This will delete all data! Only use in development.
+    </Warning>
+  </Accordion>
+  
+  <Accordion title="Prisma client not generated">
+    Regenerate the Prisma client:
+    ```bash
+    npm run db:generate
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Environment Variables" icon="gear" href="/deployment/environment-variables">
+    Configure all database connection variables
+  </Card>
+  
+  <Card title="Production Checklist" icon="check" href="/deployment/production">
+    Optimize and secure your database for production
+  </Card>
+</CardGroup>

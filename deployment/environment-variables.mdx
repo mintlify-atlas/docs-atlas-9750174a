@@ -1,0 +1,291 @@
+---
+title: Environment Variables
+description: Complete reference for all Neuron Meet environment variables
+---
+
+## Overview
+
+Neuron Meet uses environment variables to configure database connections, authentication, server settings, and external services. Copy `.env.example` to `.env` and update the values for your environment.
+
+```bash
+cp .env.example .env
+```
+
+## Database Configuration
+
+PostgreSQL connection settings for Prisma.
+
+<ParamField path="DATABASE_URL" type="string" required>
+  PostgreSQL connection string for the application.
+  
+  **For Supabase (Transaction pooler):**
+  ```
+  postgresql://postgres.[project-ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres
+  ```
+  
+  **For local Docker:**
+  ```
+  postgresql://neuronmeet:neuronmeet@localhost:5432/neuronmeet
+  ```
+  
+  <Tip>
+    Use the Transaction pooler (port 6543) for serverless/edge environments, or Session pooler (port 5432) for long-running connections.
+  </Tip>
+</ParamField>
+
+<ParamField path="DIRECT_URL" type="string" required>
+  Direct PostgreSQL connection string for migrations.
+  
+  **For Supabase (Session pooler or direct):**
+  ```
+  postgresql://postgres.[project-ref]:[password]@aws-0-[region].pooler.supabase.com:5432/postgres
+  ```
+  
+  **For local Docker:**
+  ```
+  postgresql://neuronmeet:neuronmeet@localhost:5432/neuronmeet
+  ```
+  
+  <Note>
+    This is used by Prisma for running migrations and schema changes. It should use a direct connection or Session pooler, not Transaction pooler.
+  </Note>
+</ParamField>
+
+### Getting Supabase Connection Strings
+
+<Steps>
+  <Step title="Open Supabase Dashboard">
+    Navigate to your project at [supabase.com](https://supabase.com)
+  </Step>
+  
+  <Step title="Go to Database Settings">
+    Click **Project Settings** → **Database**
+  </Step>
+  
+  <Step title="Copy Connection Strings">
+    - **DATABASE_URL**: Use "Transaction pooler" connection string
+    - **DIRECT_URL**: Use "Session pooler" or "Direct connection" string
+  </Step>
+</Steps>
+
+## JWT Authentication
+
+JSON Web Token configuration for user authentication.
+
+<ParamField path="JWT_SECRET" type="string" required>
+  Secret key for signing JWT tokens.
+  
+  **Default (development):**
+  ```
+  your-super-secret-jwt-key-change-in-production
+  ```
+  
+  <Warning>
+    **CRITICAL**: Change this to a strong, random value in production! Use at least 32 characters. You can generate one with:
+    ```bash
+    node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+    ```
+  </Warning>
+</ParamField>
+
+<ParamField path="JWT_EXPIRES_IN" type="string" default="7d">
+  Token expiration time. Supports formats like:
+  - `7d` - 7 days
+  - `24h` - 24 hours
+  - `60m` - 60 minutes
+  - `3600s` - 3600 seconds
+  
+  **Default:** `7d`
+</ParamField>
+
+## Server Configuration
+
+Backend server settings.
+
+<ParamField path="PORT" type="number" default="3001">
+  Port number for the NestJS backend server.
+  
+  **Default:** `3001`
+</ParamField>
+
+<ParamField path="NODE_ENV" type="string" default="development">
+  Node.js environment mode.
+  
+  **Options:**
+  - `development` - Development mode with debug logging
+  - `production` - Production mode with optimizations
+  - `test` - Test environment
+  
+  **Default:** `development`
+</ParamField>
+
+## Frontend Configuration
+
+Client application settings (Vite environment variables).
+
+<ParamField path="VITE_API_URL" type="string" required>
+  Backend API base URL for HTTP requests.
+  
+  **Development:**
+  ```
+  http://localhost:3001
+  ```
+  
+  **Production:**
+  ```
+  https://api.yourdomain.com
+  ```
+  
+  <Note>
+    Vite environment variables must be prefixed with `VITE_` to be accessible in the client.
+  </Note>
+</ParamField>
+
+<ParamField path="VITE_WS_URL" type="string" required>
+  Backend WebSocket URL for real-time communication.
+  
+  **Development:**
+  ```
+  http://localhost:3001
+  ```
+  
+  **Production:**
+  ```
+  https://api.yourdomain.com
+  ```
+  
+  <Tip>
+    In production, this should use `https://` (or `wss://` for explicit WebSocket). Socket.IO will automatically upgrade the connection.
+  </Tip>
+</ParamField>
+
+## TURN Server (Optional)
+
+TURN server configuration for NAT traversal in restrictive network environments.
+
+<ParamField path="TURN_SERVER_URL" type="string">
+  TURN server URL for WebRTC connections.
+  
+  **Format:**
+  ```
+  turn:turn.example.com:3478
+  ```
+  
+  Leave empty if not using a TURN server (WebRTC will fall back to STUN only).
+</ParamField>
+
+<ParamField path="TURN_USERNAME" type="string">
+  Username for TURN server authentication.
+  
+  Leave empty if not using a TURN server.
+</ParamField>
+
+<ParamField path="TURN_PASSWORD" type="string">
+  Password for TURN server authentication.
+  
+  Leave empty if not using a TURN server.
+</ParamField>
+
+<Note>
+  TURN servers are optional but recommended for production to ensure connectivity in restrictive network environments (corporate firewalls, symmetric NATs, etc.).
+  
+  You can use services like:
+  - [Twilio Network Traversal Service](https://www.twilio.com/stun-turn)
+  - [Xirsys](https://xirsys.com/)
+  - Self-hosted [coturn](https://github.com/coturn/coturn)
+</Note>
+
+## Environment-Specific Examples
+
+<CodeGroup>
+```bash Development (Local)
+DATABASE_URL="postgresql://neuronmeet:neuronmeet@localhost:5432/neuronmeet"
+DIRECT_URL="postgresql://neuronmeet:neuronmeet@localhost:5432/neuronmeet"
+
+JWT_SECRET="your-super-secret-jwt-key-change-in-production"
+JWT_EXPIRES_IN="7d"
+
+PORT=3001
+NODE_ENV=development
+
+VITE_API_URL=http://localhost:3001
+VITE_WS_URL=http://localhost:3001
+
+TURN_SERVER_URL=
+TURN_USERNAME=
+TURN_PASSWORD=
+```
+
+```bash Production (Supabase)
+DATABASE_URL="postgresql://postgres.xxxxx:password@aws-0-us-east-1.pooler.supabase.com:6543/postgres"
+DIRECT_URL="postgresql://postgres.xxxxx:password@aws-0-us-east-1.pooler.supabase.com:5432/postgres"
+
+JWT_SECRET="a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6"
+JWT_EXPIRES_IN="7d"
+
+PORT=3001
+NODE_ENV=production
+
+VITE_API_URL=https://api.yourdomain.com
+VITE_WS_URL=https://api.yourdomain.com
+
+TURN_SERVER_URL=turn:turn.yourdomain.com:3478
+TURN_USERNAME=turnuser
+TURN_PASSWORD=turnpassword
+```
+
+```bash Docker Compose
+DATABASE_URL="postgresql://neuronmeet:neuronmeet@postgres:5432/neuronmeet"
+DIRECT_URL="postgresql://neuronmeet:neuronmeet@postgres:5432/neuronmeet"
+
+JWT_SECRET="your-production-secret-change-me"
+JWT_EXPIRES_IN="7d"
+
+PORT=3001
+NODE_ENV=production
+
+VITE_API_URL=http://localhost:3001
+VITE_WS_URL=http://localhost:3001
+
+TURN_SERVER_URL=
+TURN_USERNAME=
+TURN_PASSWORD=
+```
+</CodeGroup>
+
+## Validation
+
+After configuring your environment variables:
+
+<Steps>
+  <Step title="Test database connection">
+    ```bash
+    cd server
+    npm run db:generate
+    ```
+    
+    This should connect to your database and generate the Prisma client.
+  </Step>
+  
+  <Step title="Verify server starts">
+    ```bash
+    cd server
+    npm run dev
+    ```
+    
+    Check that the server starts without errors and connects to the database.
+  </Step>
+  
+  <Step title="Check frontend build">
+    ```bash
+    cd client
+    npm run build
+    ```
+    
+    Ensure the client builds successfully with the Vite environment variables.
+  </Step>
+</Steps>
+
+<Warning>
+  Never commit your `.env` file to version control! It's already in `.gitignore` to prevent accidental commits.
+</Warning>

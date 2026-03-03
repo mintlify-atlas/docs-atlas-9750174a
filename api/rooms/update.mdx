@@ -1,0 +1,249 @@
+---
+title: Update Room Settings
+api: PATCH /rooms/:id/settings
+---
+
+Update room settings. Only the room host can update settings. Authentication is required.
+
+## Authentication
+
+This endpoint requires JWT authentication. The authenticated user must be the room host.
+
+## Parameters
+
+<ParamField path="id" type="string" required>
+  The unique room ID
+</ParamField>
+
+## Request Body
+
+All fields are optional. Only include fields you want to update.
+
+<ParamField body="allowScreenShare" type="boolean" optional>
+  Enable or disable screen sharing for participants
+</ParamField>
+
+<ParamField body="allowChat" type="boolean" optional>
+  Enable or disable chat functionality in the room
+</ParamField>
+
+<ParamField body="allowParticipantVideo" type="boolean" optional>
+  Enable or disable video for participants
+</ParamField>
+
+<ParamField body="allowParticipantAudio" type="boolean" optional>
+  Enable or disable audio for participants
+</ParamField>
+
+<ParamField body="waitingRoom" type="boolean" optional>
+  Enable or disable waiting room feature
+</ParamField>
+
+<ParamField body="isLocked" type="boolean" optional>
+  Lock or unlock the room. When locked, no new participants can join
+</ParamField>
+
+## Response
+
+Returns the updated room object with all settings.
+
+<ResponseField name="id" type="string" required>
+  Unique identifier for the room
+</ResponseField>
+
+<ResponseField name="code" type="string" required>
+  The room's unique code
+</ResponseField>
+
+<ResponseField name="name" type="string" required>
+  Name of the room
+</ResponseField>
+
+<ResponseField name="hostId" type="string" required>
+  ID of the room host
+</ResponseField>
+
+<ResponseField name="isActive" type="boolean" required>
+  Whether the room is currently active
+</ResponseField>
+
+<ResponseField name="isLocked" type="boolean" required>
+  Whether the room is locked
+</ResponseField>
+
+<ResponseField name="startedAt" type="string" required>
+  ISO 8601 timestamp when the room was started
+</ResponseField>
+
+<ResponseField name="endedAt" type="string">
+  ISO 8601 timestamp when the room ended (null if still active)
+</ResponseField>
+
+<ResponseField name="createdAt" type="string" required>
+  ISO 8601 timestamp when the room was created
+</ResponseField>
+
+<ResponseField name="updatedAt" type="string" required>
+  ISO 8601 timestamp when the room was last updated
+</ResponseField>
+
+<ResponseField name="host" type="object" required>
+  Information about the room host
+  <ResponseField name="id" type="string" required>
+    Host user ID
+  </ResponseField>
+  <ResponseField name="displayName" type="string" required>
+    Host display name
+  </ResponseField>
+  <ResponseField name="avatarUrl" type="string">
+    URL to host's avatar image
+  </ResponseField>
+</ResponseField>
+
+<ResponseField name="settings" type="object" required>
+  Updated room settings
+  <ResponseField name="id" type="string" required>
+    Settings ID
+  </ResponseField>
+  <ResponseField name="roomId" type="string" required>
+    Associated room ID
+  </ResponseField>
+  <ResponseField name="allowChat" type="boolean" required>
+    Whether chat is enabled
+  </ResponseField>
+  <ResponseField name="allowScreenShare" type="boolean" required>
+    Whether screen sharing is allowed
+  </ResponseField>
+  <ResponseField name="allowGuestAccess" type="boolean" required>
+    Whether guests can join without authentication
+  </ResponseField>
+  <ResponseField name="waitingRoom" type="boolean" required>
+    Whether waiting room is enabled
+  </ResponseField>
+  <ResponseField name="muteParticipantsOnJoin" type="boolean" required>
+    Whether participants are muted when they join
+  </ResponseField>
+  <ResponseField name="maxParticipants" type="integer" required>
+    Maximum number of participants allowed
+  </ResponseField>
+</ResponseField>
+
+## Example Request
+
+```bash
+curl -X PATCH https://api.neuronmeet.com/rooms/clx1a2b3c4d5e6f7g8h9i0j/settings \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "allowChat": false,
+    "isLocked": true,
+    "waitingRoom": false
+  }'
+```
+
+## Example Response
+
+```json
+{
+  "id": "clx1a2b3c4d5e6f7g8h9i0j",
+  "code": "abc-def-ghi",
+  "name": "Team Standup",
+  "hostId": "clx0a1b2c3d4e5f6g7h8i9j",
+  "isActive": true,
+  "isLocked": true,
+  "startedAt": "2026-03-03T10:30:00.000Z",
+  "endedAt": null,
+  "createdAt": "2026-03-03T10:30:00.000Z",
+  "updatedAt": "2026-03-03T10:45:00.000Z",
+  "host": {
+    "id": "clx0a1b2c3d4e5f6g7h8i9j",
+    "displayName": "John Doe",
+    "avatarUrl": "https://example.com/avatar.jpg"
+  },
+  "settings": {
+    "id": "clx2a3b4c5d6e7f8g9h0i1j",
+    "roomId": "clx1a2b3c4d5e6f7g8h9i0j",
+    "allowChat": false,
+    "allowScreenShare": true,
+    "allowGuestAccess": true,
+    "waitingRoom": false,
+    "muteParticipantsOnJoin": false,
+    "maxParticipants": 10
+  }
+}
+```
+
+## End Room
+
+To end a room permanently, use the DELETE endpoint.
+
+### Endpoint
+
+```
+DELETE /rooms/:id
+```
+
+### Authentication
+
+Requires JWT authentication. Only the room host can end the room.
+
+### Example Request
+
+```bash
+curl -X DELETE https://api.neuronmeet.com/rooms/clx1a2b3c4d5e6f7g8h9i0j \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+### Example Response
+
+```json
+{
+  "id": "clx1a2b3c4d5e6f7g8h9i0j",
+  "code": "abc-def-ghi",
+  "name": "Team Standup",
+  "hostId": "clx0a1b2c3d4e5f6g7h8i9j",
+  "isActive": false,
+  "isLocked": false,
+  "startedAt": "2026-03-03T10:30:00.000Z",
+  "endedAt": "2026-03-03T11:00:00.000Z",
+  "createdAt": "2026-03-03T10:30:00.000Z",
+  "updatedAt": "2026-03-03T11:00:00.000Z"
+}
+```
+
+## Error Codes
+
+<ResponseField name="400" type="error">
+  **Bad Request** - Validation errors in request body
+  ```json
+  {
+    "statusCode": 400,
+    "message": ["allowChat must be a boolean"],
+    "error": "Bad Request"
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="401" type="error">
+  **Unauthorized** - Missing or invalid JWT token
+</ResponseField>
+
+<ResponseField name="403" type="error">
+  **Forbidden** - User is not the room host
+  ```json
+  {
+    "statusCode": 403,
+    "message": "Only the host can update room settings"
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="404" type="error">
+  **Not Found** - Room with the specified ID does not exist
+  ```json
+  {
+    "statusCode": 404,
+    "message": "Room not found"
+  }
+  ```
+</ResponseField>

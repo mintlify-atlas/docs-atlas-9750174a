@@ -1,0 +1,101 @@
+---
+title: 'Login'
+api: 'POST /auth/login'
+---
+
+Authenticate a user and receive a JWT access token.
+
+## Request Body
+
+<ParamField body="email" type="string" required>
+  User's email address. Must be a valid email format.
+</ParamField>
+
+<ParamField body="password" type="string" required>
+  User's password.
+</ParamField>
+
+## Response
+
+<ResponseField name="user" type="object">
+  The authenticated user object.
+  
+  <ResponseField name="id" type="string">
+    Unique identifier for the user.
+  </ResponseField>
+  
+  <ResponseField name="email" type="string">
+    User's email address.
+  </ResponseField>
+  
+  <ResponseField name="displayName" type="string">
+    User's display name.
+  </ResponseField>
+  
+  <ResponseField name="avatarUrl" type="string | null">
+    URL to user's avatar image, if set.
+  </ResponseField>
+  
+  <ResponseField name="createdAt" type="string">
+    ISO 8601 timestamp of when the user was created.
+  </ResponseField>
+</ResponseField>
+
+<ResponseField name="accessToken" type="string">
+  JWT access token for authenticating subsequent requests. Valid for 7 days.
+</ResponseField>
+
+## Example Request
+
+```bash
+curl -X POST https://api.neuronmeet.com/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "password": "securePassword123"
+  }'
+```
+
+## Example Response
+
+```json
+{
+  "user": {
+    "id": "clx1234567890abcdef",
+    "email": "user@example.com",
+    "displayName": "John Doe",
+    "avatarUrl": null,
+    "createdAt": "2024-03-15T10:30:00.000Z"
+  },
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+## Error Responses
+
+### 401 Unauthorized
+
+Returned when the email or password is incorrect.
+
+```json
+{
+  "statusCode": 401,
+  "message": "Invalid credentials",
+  "error": "Unauthorized"
+}
+```
+
+### 400 Bad Request
+
+Returned when validation fails for any field.
+
+```json
+{
+  "statusCode": 400,
+  "message": [
+    "email must be an email",
+    "password must be a string"
+  ],
+  "error": "Bad Request"
+}
+```

@@ -1,0 +1,197 @@
+---
+title: Get Room
+api: GET /rooms/code/:code
+---
+
+Retrieve room information by room code. This endpoint is publicly accessible and returns limited information for non-authenticated requests.
+
+## Parameters
+
+<ParamField path="code" type="string" required>
+  The unique room code in format xxx-xxx-xxx (e.g., "abc-def-ghi")
+</ParamField>
+
+## Response
+
+Returns room information with limited details for public access.
+
+<ResponseField name="id" type="string" required>
+  Unique identifier for the room
+</ResponseField>
+
+<ResponseField name="code" type="string" required>
+  The room's unique code
+</ResponseField>
+
+<ResponseField name="name" type="string" required>
+  Name of the room
+</ResponseField>
+
+<ResponseField name="isActive" type="boolean" required>
+  Whether the room is currently active
+</ResponseField>
+
+<ResponseField name="isLocked" type="boolean" required>
+  Whether the room is locked (prevents new participants from joining)
+</ResponseField>
+
+<ResponseField name="host" type="object" required>
+  Information about the room host
+  <ResponseField name="id" type="string" required>
+    Host user ID
+  </ResponseField>
+  <ResponseField name="displayName" type="string" required>
+    Host display name
+  </ResponseField>
+  <ResponseField name="avatarUrl" type="string">
+    URL to host's avatar image
+  </ResponseField>
+</ResponseField>
+
+<ResponseField name="settings" type="object">
+  Limited settings information (only waitingRoom status is exposed publicly)
+  <ResponseField name="waitingRoom" type="boolean" required>
+    Whether waiting room is enabled
+  </ResponseField>
+</ResponseField>
+
+## Example Request
+
+```bash
+curl https://api.neuronmeet.com/rooms/code/abc-def-ghi
+```
+
+## Example Response
+
+```json
+{
+  "id": "clx1a2b3c4d5e6f7g8h9i0j",
+  "code": "abc-def-ghi",
+  "name": "Team Standup",
+  "isActive": true,
+  "isLocked": false,
+  "host": {
+    "id": "clx0a1b2c3d4e5f6g7h8i9j",
+    "displayName": "John Doe",
+    "avatarUrl": "https://example.com/avatar.jpg"
+  },
+  "settings": {
+    "waitingRoom": true
+  }
+}
+```
+
+## Get Room by ID (Authenticated)
+
+For authenticated requests, you can also retrieve full room details by ID.
+
+### Endpoint
+
+```
+GET /rooms/:id
+```
+
+### Authentication
+
+Requires JWT authentication via Bearer token.
+
+### Parameters
+
+<ParamField path="id" type="string" required>
+  The unique room ID
+</ParamField>
+
+### Response
+
+Returns complete room object with all settings.
+
+### Example Request
+
+```bash
+curl https://api.neuronmeet.com/rooms/clx1a2b3c4d5e6f7g8h9i0j \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+### Example Response
+
+```json
+{
+  "id": "clx1a2b3c4d5e6f7g8h9i0j",
+  "code": "abc-def-ghi",
+  "name": "Team Standup",
+  "hostId": "clx0a1b2c3d4e5f6g7h8i9j",
+  "isActive": true,
+  "isLocked": false,
+  "startedAt": "2026-03-03T10:30:00.000Z",
+  "endedAt": null,
+  "createdAt": "2026-03-03T10:30:00.000Z",
+  "updatedAt": "2026-03-03T10:30:00.000Z",
+  "host": {
+    "id": "clx0a1b2c3d4e5f6g7h8i9j",
+    "displayName": "John Doe",
+    "avatarUrl": "https://example.com/avatar.jpg"
+  },
+  "settings": {
+    "id": "clx2a3b4c5d6e7f8g9h0i1j",
+    "roomId": "clx1a2b3c4d5e6f7g8h9i0j",
+    "allowChat": true,
+    "allowScreenShare": true,
+    "allowGuestAccess": true,
+    "waitingRoom": true,
+    "muteParticipantsOnJoin": false,
+    "maxParticipants": 10
+  }
+}
+```
+
+## Get Room Participants
+
+Retrieve all active participants in a room.
+
+### Endpoint
+
+```
+GET /rooms/:id/participants
+GET /rooms/code/:code/participants
+```
+
+### Example Request
+
+```bash
+curl https://api.neuronmeet.com/rooms/code/abc-def-ghi/participants
+```
+
+### Example Response
+
+```json
+[
+  {
+    "id": "clx3a4b5c6d7e8f9g0h1i2j",
+    "displayName": "John Doe",
+    "avatarUrl": "https://example.com/avatar.jpg",
+    "isHost": true
+  },
+  {
+    "id": "clx4a5b6c7d8e9f0g1h2i3j",
+    "displayName": "Jane Smith",
+    "avatarUrl": null,
+    "isHost": false
+  }
+]
+```
+
+## Error Codes
+
+<ResponseField name="404" type="error">
+  **Not Found** - Room with the specified code or ID does not exist
+  ```json
+  {
+    "statusCode": 404,
+    "message": "Room not found"
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="401" type="error">
+  **Unauthorized** - Missing or invalid JWT token (for authenticated endpoints only)
+</ResponseField>

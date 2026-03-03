@@ -1,0 +1,174 @@
+---
+title: Join Room
+api: POST /rooms/:code/join
+---
+
+Join a meeting room as an authenticated user or guest. This endpoint is not directly exposed in the REST API but is handled via WebSocket connection. The logic is implemented in the `addParticipant` service method.
+
+<Info>
+Room joining is typically handled through WebSocket events after connecting to the room. The `addParticipant` method validates room access and creates a participant record.
+</Info>
+
+## Join Flow
+
+### For Authenticated Users
+
+1. Connect to WebSocket with JWT token
+2. Emit join event with room code
+3. Server validates:
+   - Room is active
+   - Room is not locked
+   - Room has not reached max participants
+4. Participant record is created with `userId`
+
+### For Guests
+
+1. Connect to WebSocket without authentication
+2. Emit join event with room code and guest name
+3. Server validates same conditions as above
+4. Participant record is created with `guestName`
+
+## Parameters
+
+<ParamField path="code" type="string" required>
+  The unique room code in format xxx-xxx-xxx (e.g., "abc-def-ghi")
+</ParamField>
+
+## Request Body (for guests)
+
+<ParamField body="guestName" type="string" optional>
+  Display name for guest participants. Required if not authenticated.
+  - Minimum length: 1
+  - Maximum length: 50
+</ParamField>
+
+## Response
+
+Returns the participant object upon successful join.
+
+<ResponseField name="id" type="string" required>
+  Unique identifier for the participant
+</ResponseField>
+
+<ResponseField name="roomId" type="string" required>
+  ID of the room the participant joined
+</ResponseField>
+
+<ResponseField name="userId" type="string">
+  ID of the authenticated user (null for guests)
+</ResponseField>
+
+<ResponseField name="guestName" type="string">
+  Display name for guest participants (null for authenticated users)
+</ResponseField>
+
+<ResponseField name="isActive" type="boolean" required>
+  Whether the participant is currently active in the room
+</ResponseField>
+
+<ResponseField name="isHost" type="boolean" required>
+  Whether the participant is the room host
+</ResponseField>
+
+<ResponseField name="joinedAt" type="string" required>
+  ISO 8601 timestamp when the participant joined
+</ResponseField>
+
+<ResponseField name="leftAt" type="string">
+  ISO 8601 timestamp when the participant left (null if still in room)
+</ResponseField>
+
+## Example: Authenticated User
+
+```javascript
+// WebSocket event
+socket.emit('join-room', {
+  code: 'abc-def-ghi'
+});
+
+// Response
+{
+  "id": "clx3a4b5c6d7e8f9g0h1i2j",
+  "roomId": "clx1a2b3c4d5e6f7g8h9i0j",
+  "userId": "clx0a1b2c3d4e5f6g7h8i9j",
+  "guestName": null,
+  "isActive": true,
+  "isHost": false,
+  "joinedAt": "2026-03-03T10:35:00.000Z",
+  "leftAt": null
+}
+```
+
+## Example: Guest User
+
+```javascript
+// WebSocket event
+socket.emit('join-room', {
+  code: 'abc-def-ghi',
+  guestName: 'Jane Smith'
+});
+
+// Response
+{
+  "id": "clx4a5b6c7d8e9f0g1h2i3j",
+  "roomId": "clx1a2b3c4d5e6f7g8h9i0j",
+  "userId": null,
+  "guestName": "Jane Smith",
+  "isActive": true,
+  "isHost": false,
+  "joinedAt": "2026-03-03T10:36:00.000Z",
+  "leftAt": null
+}
+```
+
+## Validation Rules
+
+### Room Status Checks
+
+- **Room must be active**: If `room.isActive` is false, returns 400 error
+- **Room must not be locked**: If `room.isLocked` is true, returns 403 error
+- **Room must have capacity**: If participant count >= `maxParticipants`, returns 400 error
+
+### Participant Checks
+
+- Authenticated users are identified by `userId`
+- Guests must provide a `guestName`
+- Host status is automatically set if `userId` matches `room.hostId`
+
+## Error Codes
+
+<ResponseField name="400" type="error">
+  **Bad Request** - Room is no longer active or room is full
+  ```json
+  {
+    "statusCode": 400,
+    "message": "Room is no longer active"
+  }
+  ```
+  ```json
+  {
+    "statusCode": 400,
+    "message": "Room is full"
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="403" type="error">
+  **Forbidden** - Room is locked and not accepting new participants
+  ```json
+  {
+    "statusCode": 403,
+    "message": "Room is locked"
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="404" type="error">
+  **Not Found** - Room with the specified code does not exist
+  ```json
+  {
+    "statusCode": 404,
+    "message": "Room not found"
+  }
+  ```
+</ResponseField>

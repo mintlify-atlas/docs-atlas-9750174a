@@ -1,0 +1,117 @@
+---
+title: 'JWT Authentication'
+---
+
+Learn how to use JWT tokens to authenticate API requests in Neuron Meet.
+
+## Overview
+
+Neuron Meet uses JWT (JSON Web Tokens) for API authentication. After successful registration or login, you receive an access token that must be included in subsequent requests to protected endpoints.
+
+## Token Structure
+
+JWT tokens contain the following payload:
+
+```json
+{
+  "sub": "clx1234567890abcdef",  // User ID
+  "email": "user@example.com",     // User email
+  "iat": 1710499800,                // Issued at (Unix timestamp)
+  "exp": 1711104600                 // Expiration (Unix timestamp)
+}
+```
+
+### Token Claims
+
+- `sub` - Subject: The unique user ID
+- `email` - User's email address
+- `iat` - Issued At: When the token was created
+- `exp` - Expiration: When the token expires
+
+## Token Expiration
+
+Access tokens are valid for **7 days** from the time of issuance. After expiration, you must login again to obtain a new token.
+
+## Using JWT Tokens
+
+### Authorization Header
+
+Include the JWT token in the `Authorization` header as a Bearer token:
+
+```bash
+curl -X GET https://api.neuronmeet.com/auth/me \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+
+### Example: Get Current User Profile
+
+```bash
+curl -X GET https://api.neuronmeet.com/auth/me \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+```
+
+**Response:**
+
+```json
+{
+  "id": "clx1234567890abcdef",
+  "email": "user@example.com",
+  "name": "John Doe",
+  "displayName": "John Doe",
+  "avatarUrl": null,
+  "createdAt": "2024-03-15T10:30:00.000Z"
+}
+```
+
+## Protected Endpoints
+
+The following endpoints require JWT authentication:
+
+- `GET /auth/me` - Get current user profile
+- `POST /rooms` - Create a new room
+- `GET /rooms/:id` - Get room details
+- All WebSocket connections for video conferencing
+
+## Authentication Flow
+
+1. **Register or Login**: Call `/auth/register` or `/auth/login` to obtain an access token
+2. **Store Token**: Save the `accessToken` securely (e.g., localStorage, secure cookie)
+3. **Include in Requests**: Add the token to the `Authorization` header as `Bearer {token}`
+4. **Handle Expiration**: When receiving 401 errors, prompt user to login again
+
+## Token Validation
+
+The server validates JWT tokens using the `JWT_SECRET` environment variable. The JWT strategy:
+
+- Extracts the token from the `Authorization` header
+- Verifies the token signature using the secret key
+- Checks token expiration
+- Validates the user still exists in the database
+- Attaches user object to the request
+
+## Error Responses
+
+### 401 Unauthorized
+
+Returned when:
+- No token is provided
+- Token is invalid or malformed
+- Token signature verification fails
+- Token has expired
+- User associated with token no longer exists
+
+```json
+{
+  "statusCode": 401,
+  "message": "Unauthorized",
+  "error": "Unauthorized"
+}
+```
+
+## Security Best Practices
+
+- Never expose your `JWT_SECRET` in client-side code
+- Store tokens securely (avoid localStorage in sensitive applications)
+- Always use HTTPS in production to prevent token interception
+- Implement token refresh mechanisms for long-lived sessions
+- Clear tokens on logout

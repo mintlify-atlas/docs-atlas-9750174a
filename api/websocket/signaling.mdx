@@ -1,0 +1,614 @@
+---
+title: WebRTC Signaling
+description: Real-time WebRTC signaling events for audio, video, and screen sharing
+---
+
+## Overview
+
+WebRTC signaling events handle the negotiation and connection setup between peers in a video conference. Neuron Meet uses Socket.io to exchange SDP offers/answers and ICE candidates.
+
+## Room Management Events
+
+### Join Room
+
+Join a video conference room.
+
+**Client → Server: `join-room`**
+
+```typescript
+socket.emit("join-room", {
+  roomCode: "ABC123",           // 6-character room code
+  userId?: "user-123",          // Optional: authenticated user ID
+  displayName: "John Doe",      // Display name for the participant
+});
+```
+
+**Server → Client: `room-joined`**
+
+```typescript
+socket.on("room-joined", (data: {
+  roomId: string;                    // Internal room UUID
+  roomCode: string;                  // 6-character room code
+  isHost: boolean;                   // Whether the user is the room host
+  participants: ParticipantInfo[];   // Existing participants in the room
+  messages: ChatMessage[];           // Recent chat messages (last 50)
+  settings: RoomSettings;            // Room configuration
+}) => {
+  console.log("Joined room:", data.roomId);
+});
+```
+
+**Participant Info Structure:**
+
+```typescript
+interface ParticipantInfo {
+  socketId: string;          // Socket.io connection ID
+  userId?: string;           // User ID (if authenticated)
+  displayName: string;       // Display name
+  isHost: boolean;           // Host status
+  isMuted: boolean;          // Audio muted status
+  isVideoOff: boolean;       // Video off status
+  isScreenSharing: boolean;  // Screen sharing status
+  isHandRaised: boolean;     // Hand raised status
+}
+```
+
+**Room Settings Structure:**
+
+```typescript
+interface RoomSettings {
+  allowScreenShare: boolean;  // Screen sharing enabled
+  allowChat: boolean;         // Chat enabled
+  waitingRoom: boolean;       // Waiting room enabled
+}
+```
+
+**Error Response: `join-error`**
+
+```typescript
+socket.on("join-error", (data: {
+  code: "JOIN_FAILED";
+  message: string;  // e.g., "Room not found", "Room is locked", "Room is full"
+}) => {
+  console.error("Join failed:", data.message);
+});
+```
+
+### Leave Room
+
+Leave the current video conference room.
+
+**Client → Server: `leave-room`**
+
+```typescript
+socket.emit("leave-room", {
+  roomId: "room-uuid",
+});
+
+// Returns: { success: true }
+```
+
+### User Joined
+
+Notifies existing participants when a new user joins.
+
+**Server → Client: `user-joined`**
+
+```typescript
+socket.on("user-joined", (data: {
+  participant: ParticipantInfo;
+}) => {
+  console.log(`${data.participant.displayName} joined`);
+  // Create WebRTC offer to new participant
+});
+```
+
+### User Left
+
+Notifies when a participant leaves the room.
+
+**Server → Client: `user-left`**
+
+```typescript
+socket.on("user-left", (data: {
+  socketId: string;
+  userId?: string;
+}) => {
+  console.log(`User ${data.socketId} left`);
+  // Close peer connection
+});
+```
+
+## WebRTC Signaling Events
+
+### SDP Offer
+
+Send or receive WebRTC SDP offer for connection negotiation.
+
+**Client → Server: `offer`**
+
+```typescript
+socket.emit("offer", {
+  targetId: "target-socket-id",   // Socket ID of the peer
+  sdp: RTCSessionDescriptionInit, // SDP offer from RTCPeerConnection
+});
+```
+
+**Server → Client: `offer`**
+
+```typescript
+socket.on("offer", async (data: {
+  senderId: string;                // Socket ID of the sender
+  userId?: string;                 // User ID of the sender
+  displayName: string;             // Display name of the sender
+  sdp: RTCSessionDescriptionInit;  // SDP offer
+}) => {
+  // Create peer connection and set remote description
+  const pc = new RTCPeerConnection();
+  await pc.setRemoteDescription(data.sdp);
+  
+  // Create and send answer
+  const answer = await pc.createAnswer();
+  await pc.setLocalDescription(answer);
+  
+  socket.emit("answer", {
+    targetId: data.senderId,
+    sdp: answer,
+  });
+});
+```
+
+### SDP Answer
+
+Send or receive WebRTC SDP answer for connection negotiation.
+
+**Client → Server: `answer`**
+
+```typescript
+socket.emit("answer", {
+  targetId: "target-socket-id",
+  sdp: RTCSessionDescriptionInit,
+});
+```
+
+**Server → Client: `answer`**
+
+```typescript
+socket.on("answer", async (data: {
+  senderId: string;
+  sdp: RTCSessionDescriptionInit;
+}) => {
+  // Set remote description on peer connection
+  await peerConnection.setRemoteDescription(data.sdp);
+});
+```
+
+### ICE Candidate
+
+Exchange ICE candidates for NAT traversal.
+
+**Client → Server: `ice-candidate`**
+
+```typescript
+socket.emit("ice-candidate", {
+  targetId: "target-socket-id",
+  candidate: RTCIceCandidateInit,
+});
+```
+
+**Server → Client: `ice-candidate`**
+
+```typescript
+socket.on("ice-candidate", async (data: {
+  senderId: string;
+  candidate: RTCIceCandidateInit;
+}) => {
+  // Add ICE candidate to peer connection
+  await peerConnection.addIceCandidate(data.candidate);
+});
+```
+
+## Media Control Events
+
+### Toggle Audio
+
+Toggle microphone on/off and notify other participants.
+
+**Client → Server: `toggle-audio`**
+
+```typescript
+socket.emit("toggle-audio", {
+  roomId: "room-uuid",
+  enabled: false,  // true = unmuted, false = muted
+});
+```
+
+**Server → Client: `user-toggle-audio`**
+
+```typescript
+socket.on("user-toggle-audio", (data: {
+  socketId: string;  // Socket ID of the user
+  enabled: boolean;  // Audio status
+}) => {
+  console.log(`User ${data.socketId} ${data.enabled ? 'unmuted' : 'muted'}`);
+});
+```
+
+### Toggle Video
+
+Toggle camera on/off and notify other participants.
+
+**Client → Server: `toggle-video`**
+
+```typescript
+socket.emit("toggle-video", {
+  roomId: "room-uuid",
+  enabled: true,  // true = camera on, false = camera off
+});
+```
+
+**Server → Client: `user-toggle-video`**
+
+```typescript
+socket.on("user-toggle-video", (data: {
+  socketId: string;
+  enabled: boolean;
+}) => {
+  console.log(`User ${data.socketId} turned video ${data.enabled ? 'on' : 'off'}`);
+});
+```
+
+### Start Screen Share
+
+Start screen sharing.
+
+**Client → Server: `start-screen-share`**
+
+```typescript
+socket.emit("start-screen-share", {
+  roomId: "room-uuid",
+});
+```
+
+**Server → Client: `screen-share-started`**
+
+```typescript
+socket.on("screen-share-started", (data: {
+  socketId: string;  // Socket ID of the user sharing
+}) => {
+  console.log(`User ${data.socketId} started screen sharing`);
+});
+```
+
+### Stop Screen Share
+
+Stop screen sharing.
+
+**Client → Server: `stop-screen-share`**
+
+```typescript
+socket.emit("stop-screen-share", {
+  roomId: "room-uuid",
+});
+```
+
+**Server → Client: `screen-share-stopped`**
+
+```typescript
+socket.on("screen-share-stopped", (data: {
+  socketId: string;
+}) => {
+  console.log(`User ${data.socketId} stopped screen sharing`);
+});
+```
+
+## Participant Interaction Events
+
+### Hand Raise
+
+Raise or lower hand to get attention.
+
+**Client → Server: `toggle-hand-raise`**
+
+```typescript
+socket.emit("toggle-hand-raise", {
+  roomId: "room-uuid",
+  raised: true,  // true = raise hand, false = lower hand
+});
+```
+
+**Server → Client: `user-hand-raised`**
+
+```typescript
+socket.on("user-hand-raised", (data: {
+  socketId: string;
+  displayName: string;
+}) => {
+  console.log(`${data.displayName} raised their hand`);
+});
+```
+
+**Server → Client: `user-hand-lowered`**
+
+```typescript
+socket.on("user-hand-lowered", (data: {
+  socketId: string;
+}) => {
+  console.log(`User ${data.socketId} lowered their hand`);
+});
+```
+
+## Host Control Events
+
+These events are only available to the room host (verified server-side).
+
+### Mute Participant
+
+Force mute a participant (host only).
+
+**Client → Server: `mute-participant`**
+
+```typescript
+socket.emit("mute-participant", {
+  roomId: "room-uuid",
+  targetId: "target-socket-id",
+});
+
+// Returns: { success: true } or { success: false, error: "Not authorized" }
+```
+
+**Server → Target Client: `force-mute`**
+
+```typescript
+socket.on("force-mute", () => {
+  // Mute local audio
+  console.log("You have been muted by the host");
+});
+```
+
+### Remove Participant
+
+Remove a participant from the room (host only).
+
+**Client → Server: `remove-participant`**
+
+```typescript
+socket.emit("remove-participant", {
+  roomId: "room-uuid",
+  targetId: "target-socket-id",
+});
+
+// Returns: { success: true } or { success: false, error: "Not authorized" }
+```
+
+**Server → Target Client: `force-disconnect`**
+
+```typescript
+socket.on("force-disconnect", (data: {
+  reason: string;  // e.g., "Removed by host"
+}) => {
+  console.log("Kicked from room:", data.reason);
+  // Disconnect and return to lobby
+});
+```
+
+### Lock Room
+
+Lock or unlock the room to prevent new participants (host only).
+
+**Client → Server: `lock-room`**
+
+```typescript
+socket.emit("lock-room", {
+  roomId: "room-uuid",
+  locked: true,  // true = lock, false = unlock
+});
+
+// Returns: { success: true } or { success: false, error: "Not authorized" }
+```
+
+**Server → All Clients: `room-locked`**
+
+```typescript
+socket.on("room-locked", (data: {
+  locked: boolean;
+}) => {
+  console.log(`Room is now ${data.locked ? 'locked' : 'unlocked'}`);
+});
+```
+
+## Complete Example: WebRTC Signaling
+
+```typescript
+import { io, Socket } from "socket.io-client";
+
+class WebRTCSignaling {
+  private socket: Socket;
+  private peerConnections: Map<string, RTCPeerConnection> = new Map();
+
+  constructor(wsUrl: string, displayName: string) {
+    this.socket = io(wsUrl, {
+      auth: { displayName },
+    });
+
+    this.setupSignalingHandlers();
+  }
+
+  private setupSignalingHandlers() {
+    // Room events
+    this.socket.on("room-joined", (data) => {
+      console.log("Joined room:", data.roomId);
+      // Create offers to existing participants
+      data.participants.forEach((p) => this.createOffer(p.socketId));
+    });
+
+    this.socket.on("user-joined", (data) => {
+      console.log("User joined:", data.participant.displayName);
+      // Wait for offer from new user
+    });
+
+    this.socket.on("user-left", (data) => {
+      this.closePeerConnection(data.socketId);
+    });
+
+    // WebRTC signaling
+    this.socket.on("offer", async (data) => {
+      const pc = this.getOrCreatePeerConnection(data.senderId);
+      await pc.setRemoteDescription(data.sdp);
+      
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      
+      this.socket.emit("answer", {
+        targetId: data.senderId,
+        sdp: answer,
+      });
+    });
+
+    this.socket.on("answer", async (data) => {
+      const pc = this.peerConnections.get(data.senderId);
+      if (pc) {
+        await pc.setRemoteDescription(data.sdp);
+      }
+    });
+
+    this.socket.on("ice-candidate", async (data) => {
+      const pc = this.peerConnections.get(data.senderId);
+      if (pc) {
+        await pc.addIceCandidate(data.candidate);
+      }
+    });
+
+    // Media events
+    this.socket.on("user-toggle-audio", (data) => {
+      console.log(`User ${data.socketId} ${data.enabled ? 'unmuted' : 'muted'}`);
+    });
+
+    this.socket.on("user-toggle-video", (data) => {
+      console.log(`User ${data.socketId} video ${data.enabled ? 'on' : 'off'}`);
+    });
+  }
+
+  private getOrCreatePeerConnection(peerId: string): RTCPeerConnection {
+    if (this.peerConnections.has(peerId)) {
+      return this.peerConnections.get(peerId)!;
+    }
+
+    const pc = new RTCPeerConnection({
+      iceServers: [
+        { urls: "stun:stun.l.google.com:19302" },
+      ],
+    });
+
+    // Send ICE candidates
+    pc.onicecandidate = (event) => {
+      if (event.candidate) {
+        this.socket.emit("ice-candidate", {
+          targetId: peerId,
+          candidate: event.candidate.toJSON(),
+        });
+      }
+    };
+
+    // Handle remote stream
+    pc.ontrack = (event) => {
+      console.log("Received remote track from:", peerId);
+      // Display remote stream
+    };
+
+    this.peerConnections.set(peerId, pc);
+    return pc;
+  }
+
+  private async createOffer(peerId: string) {
+    const pc = this.getOrCreatePeerConnection(peerId);
+    
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+    
+    this.socket.emit("offer", {
+      targetId: peerId,
+      sdp: offer,
+    });
+  }
+
+  private closePeerConnection(peerId: string) {
+    const pc = this.peerConnections.get(peerId);
+    if (pc) {
+      pc.close();
+      this.peerConnections.delete(peerId);
+    }
+  }
+
+  joinRoom(roomCode: string) {
+    return new Promise((resolve, reject) => {
+      this.socket.emit("join-room", {
+        roomCode,
+        displayName: "John Doe",
+      });
+
+      this.socket.once("room-joined", resolve);
+      this.socket.once("join-error", (err) => reject(new Error(err.message)));
+      setTimeout(() => reject(new Error("Join timeout")), 15000);
+    });
+  }
+
+  toggleAudio(enabled: boolean) {
+    const roomId = "current-room-id"; // Get from state
+    this.socket.emit("toggle-audio", { roomId, enabled });
+  }
+
+  toggleVideo(enabled: boolean) {
+    const roomId = "current-room-id"; // Get from state
+    this.socket.emit("toggle-video", { roomId, enabled });
+  }
+}
+```
+
+## Event Flow Diagram
+
+### Room Join Flow
+
+```
+Client A (existing)          Server          Client B (new)
+     |                          |                    |
+     |                          |    join-room       |
+     |                          |<-------------------|
+     |                          |                    |
+     |      user-joined        |                    |
+     |<-----------------------  |                    |
+     |  (notifies about B)      |                    |
+     |                          |   room-joined      |
+     |                          |------------------->|
+     |                          |  (includes A info) |
+     |                          |                    |
+     |         offer            |                    |
+     |----------------------------------------->     |
+     |                          |                    |
+     |                          |      answer        |
+     |<-----------------------------------------     |
+     |                          |                    |
+     |    ice-candidate         |                    |
+     |<---------------------------------------->     |
+     |                          |                    |
+```
+
+### Media Toggle Flow
+
+```
+Client A                    Server          Other Clients
+     |                          |                    |
+     |    toggle-audio          |                    |
+     |---------------------------->                  |
+     |    (roomId, enabled)     |                    |
+     |                          |                    |
+     |                          | user-toggle-audio  |
+     |                          |------------------->|
+     |                          | (socketId, enabled)|
+     |                          |                    |
+```
+
+## Next Steps
+
+- [Chat Events](/api/websocket/chat) - Learn about real-time chat messaging
+- [WebSocket Overview](/api/websocket/overview) - Review connection setup and authentication
