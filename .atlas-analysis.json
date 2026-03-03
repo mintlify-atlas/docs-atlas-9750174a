@@ -1,0 +1,111 @@
+{
+  "projectType": "saas",
+  "projectName": "Neuron Meet",
+  "projectDescription": "Real-time video conferencing platform with WebRTC, built with React and NestJS",
+  "theme": "palm",
+  "primaryColor": "#2563eb",
+  "lightColor": "#60a5fa",
+  "darkColor": "#1e40af",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Core Features",
+            "pages": [
+              "features/video-audio",
+              "features/screen-sharing",
+              "features/chat",
+              "features/room-management",
+              "features/guest-access"
+            ]
+          },
+          {
+            "group": "Deployment",
+            "pages": [
+              "deployment/overview",
+              "deployment/environment-variables",
+              "deployment/database-setup",
+              "deployment/production"
+            ]
+          },
+          {
+            "group": "Architecture",
+            "pages": [
+              "architecture/overview",
+              "architecture/webrtc",
+              "architecture/signaling",
+              "architecture/database-schema"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Authentication",
+            "pages": [
+              "api/auth/register",
+              "api/auth/login",
+              "api/auth/jwt"
+            ]
+          },
+          {
+            "group": "Rooms",
+            "pages": [
+              "api/rooms/create",
+              "api/rooms/join",
+              "api/rooms/get",
+              "api/rooms/update",
+              "api/rooms/settings"
+            ]
+          },
+          {
+            "group": "Users",
+            "pages": [
+              "api/users/get-profile",
+              "api/users/update-profile"
+            ]
+          },
+          {
+            "group": "WebSocket Events",
+            "pages": [
+              "api/websocket/overview",
+              "api/websocket/signaling",
+              "api/websocket/chat"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "HD video and audio calls with WebRTC",
+    "Real-time screen sharing",
+    "In-meeting chat with Socket.io",
+    "Host controls and room management",
+    "Guest access without registration",
+    "Responsive design for mobile and desktop"
+  ],
+  "publicApiSurface": [
+    "POST /auth/register - Register new user",
+    "POST /auth/login - Authenticate user",
+    "POST /rooms - Create new meeting room",
+    "GET /rooms/:code - Get room details",
+    "PATCH /rooms/:id - Update room settings",
+    "POST /rooms/:code/join - Join meeting room",
+    "GET /users/profile - Get user profile",
+    "PATCH /users/profile - Update user profile",
+    "WS /signaling - WebRTC signaling events (offer, answer, ice-candidate)",
+    "WS /chat - Real-time chat events (message, join, leave)"
+  ]
+}
