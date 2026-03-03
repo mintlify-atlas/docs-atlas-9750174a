@@ -1,0 +1,180 @@
+---
+title: Get Room Participants
+description: Retrieve active participants in a meeting room
+---
+
+Get a list of all active participants currently in a meeting room. Available for both authenticated and guest users.
+
+## Endpoints
+
+### By Room ID
+
+```
+GET /rooms/:id/participants
+```
+
+Requires authentication. Returns all active participants for a room by its database ID.
+
+### By Room Code
+
+```
+GET /rooms/code/:code/participants
+```
+
+Public endpoint. Returns all active participants for a room by its meeting code (xxx-xxx-xxx format).
+
+## Authentication
+
+- `/rooms/:id/participants` - Requires JWT authentication
+- `/rooms/code/:code/participants` - No authentication required (public)
+
+## Path Parameters
+
+<ParamField path="id" type="string">
+  The room's unique identifier (CUID) - for ID endpoint
+</ParamField>
+
+<ParamField path="code" type="string">
+  The room's meeting code in xxx-xxx-xxx format - for code endpoint
+</ParamField>
+
+## Response
+
+Returns an array of active participant objects.
+
+<ResponseField name="participants" type="array">
+  Array of participant objects currently in the room
+  
+  <Expandable title="Participant object">
+    <ResponseField name="id" type="string">
+      Unique participant identifier
+    </ResponseField>
+    
+    <ResponseField name="userId" type="string | null">
+      User ID if authenticated, null for guests
+    </ResponseField>
+    
+    <ResponseField name="guestName" type="string | null">
+      Display name for guest users
+    </ResponseField>
+    
+    <ResponseField name="isActive" type="boolean">
+      Whether participant is currently active
+    </ResponseField>
+    
+    <ResponseField name="isHost" type="boolean">
+      Whether participant is the room host
+    </ResponseField>
+    
+    <ResponseField name="joinedAt" type="string">
+      ISO 8601 timestamp when participant joined
+    </ResponseField>
+    
+    <ResponseField name="user" type="object | null">
+      User object with name and displayName if authenticated
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Example Request
+
+### By Room ID (Authenticated)
+
+```bash cURL
+curl -X GET https://api.neuronmeet.com/rooms/clh3x2k5g0001l408xyz12345/participants \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+
+### By Room Code (Public)
+
+```bash cURL
+curl -X GET https://api.neuronmeet.com/rooms/code/abc-def-ghi/participants
+```
+
+## Example Response
+
+```json
+[
+  {
+    "id": "clh3x3k5g0002l408xyz67890",
+    "userId": "clh3x2k5g0001l408xyz12345",
+    "guestName": null,
+    "isActive": true,
+    "isHost": true,
+    "joinedAt": "2024-03-03T10:00:00.000Z",
+    "user": {
+      "name": "Alex Johnson",
+      "displayName": "Alex J."
+    }
+  },
+  {
+    "id": "clh3x4k5g0003l408xyz11111",
+    "userId": null,
+    "guestName": "Guest User",
+    "isActive": true,
+    "isHost": false,
+    "joinedAt": "2024-03-03T10:05:00.000Z",
+    "user": null
+  },
+  {
+    "id": "clh3x5k5g0004l408xyz22222",
+    "userId": "clh3x6k5g0005l408xyz33333",
+    "guestName": null,
+    "isActive": true,
+    "isHost": false,
+    "joinedAt": "2024-03-03T10:10:00.000Z",
+    "user": {
+      "name": "Sarah Williams",
+      "displayName": "Sarah W."
+    }
+  }
+]
+```
+
+## Error Responses
+
+### 404 Not Found
+
+Room does not exist.
+
+```json
+{
+  "statusCode": 404,
+  "message": "Room not found"
+}
+```
+
+### 401 Unauthorized
+
+Missing or invalid JWT token (for ID endpoint only).
+
+```json
+{
+  "statusCode": 401,
+  "message": "Unauthorized"
+}
+```
+
+## Use Cases
+
+- Display participant list in meeting UI
+- Show participant count before joining
+- Update participant roster in real-time (combine with WebSocket events)
+- Check if room has active participants
+- Identify room host for UI badges
+
+## Real-Time Updates
+
+For real-time participant updates during meetings, use WebSocket events in combination with this endpoint:
+
+- **join-room** - Initial participant list on joining
+- **user-joined** - New participant joined
+- **user-left** - Participant left the room
+
+See [WebRTC Signaling Events](/api/websocket/signaling) for more details.
+
+## Related Endpoints
+
+- [Get Room](/api/rooms/get) - Get complete room information including participants
+- [Join Room](/api/rooms/join) - Join a meeting room
+- [WebSocket Signaling](/api/websocket/signaling) - Real-time participant events

@@ -1,0 +1,194 @@
+---
+title: Get Room Messages
+description: Retrieve chat message history for a meeting room
+---
+
+Get the chat message history for a specific meeting room. Returns all messages sent during the meeting.
+
+## Endpoint
+
+```
+GET /rooms/:id/messages
+```
+
+## Authentication
+
+No authentication required. Any user with the room ID can retrieve messages.
+
+<Warning>
+  Messages are only persisted during the meeting session. Once a room is ended, message history may be cleared depending on server configuration.
+</Warning>
+
+## Path Parameters
+
+<ParamField path="id" type="string" required>
+  The room's unique identifier (CUID)
+</ParamField>
+
+## Response
+
+Returns an array of message objects ordered by creation time (oldest first).
+
+<ResponseField name="messages" type="array">
+  Array of chat message objects
+  
+  <Expandable title="Message object">
+    <ResponseField name="id" type="string">
+      Unique message identifier
+    </ResponseField>
+    
+    <ResponseField name="roomId" type="string">
+      ID of the room this message belongs to
+    </ResponseField>
+    
+    <ResponseField name="userId" type="string | null">
+      ID of the user who sent the message (null for guests)
+    </ResponseField>
+    
+    <ResponseField name="senderName" type="string">
+      Display name of the message sender
+    </ResponseField>
+    
+    <ResponseField name="content" type="string">
+      Message content (text)
+    </ResponseField>
+    
+    <ResponseField name="type" type="string">
+      Message type: `TEXT`, `SYSTEM`, or `FILE`
+    </ResponseField>
+    
+    <ResponseField name="createdAt" type="string">
+      ISO 8601 timestamp when message was sent
+    </ResponseField>
+    
+    <ResponseField name="user" type="object | null">
+      User object with name and displayName if sender was authenticated
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Example Request
+
+```bash cURL
+curl -X GET https://api.neuronmeet.com/rooms/clh3x2k5g0001l408xyz12345/messages
+```
+
+## Example Response
+
+```json
+[
+  {
+    "id": "clh3x7k5g0006l408xyz44444",
+    "roomId": "clh3x2k5g0001l408xyz12345",
+    "userId": "clh3x2k5g0001l408xyz12345",
+    "senderName": "Alex J.",
+    "content": "Welcome everyone to the meeting!",
+    "type": "TEXT",
+    "createdAt": "2024-03-03T10:01:00.000Z",
+    "user": {
+      "name": "Alex Johnson",
+      "displayName": "Alex J."
+    }
+  },
+  {
+    "id": "clh3x8k5g0007l408xyz55555",
+    "roomId": "clh3x2k5g0001l408xyz12345",
+    "userId": null,
+    "senderName": "Guest User",
+    "content": "Thanks for having me!",
+    "type": "TEXT",
+    "createdAt": "2024-03-03T10:02:30.000Z",
+    "user": null
+  },
+  {
+    "id": "clh3x9k5g0008l408xyz66666",
+    "roomId": "clh3x2k5g0001l408xyz12345",
+    "userId": null,
+    "senderName": "System",
+    "content": "Sarah W. joined the meeting",
+    "type": "SYSTEM",
+    "createdAt": "2024-03-03T10:10:00.000Z",
+    "user": null
+  }
+]
+```
+
+## Message Types
+
+<AccordionGroup>
+  <Accordion title="TEXT - Regular chat messages">
+    Standard text messages sent by participants during the meeting.
+    
+    ```json
+    {
+      "type": "TEXT",
+      "senderName": "Alex J.",
+      "content": "Hello everyone!"
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="SYSTEM - System notifications">
+    Automated messages about meeting events (join, leave, settings changes).
+    
+    ```json
+    {
+      "type": "SYSTEM",
+      "senderName": "System",
+      "content": "Meeting locked by host"
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="FILE - File sharing messages">
+    Messages related to file sharing (if implemented).
+    
+    ```json
+    {
+      "type": "FILE",
+      "senderName": "Alex J.",
+      "content": "presentation.pdf"
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Error Responses
+
+### 404 Not Found
+
+Room does not exist.
+
+```json
+{
+  "statusCode": 404,
+  "message": "Room not found"
+}
+```
+
+## Use Cases
+
+- Load chat history when joining a meeting late
+- Export meeting chat transcript
+- Review messages after meeting ends
+- Search through meeting discussions
+- Compliance and record-keeping
+
+## Real-Time Updates
+
+For real-time chat during meetings, use WebSocket events instead of polling this endpoint:
+
+- **chat-message** - New message received
+- **user-typing** - User is typing indicator
+
+See [Chat Events](/api/websocket/chat) for real-time chat implementation.
+
+<Tip>
+  When a user joins a room via WebSocket, the last 50 messages are automatically sent in the `room-joined` event. Use this endpoint only if you need the complete history or are joining via REST API.
+</Tip>
+
+## Related Endpoints
+
+- [Get Room](/api/rooms/get) - Get complete room information
+- [Chat WebSocket Events](/api/websocket/chat) - Real-time chat messaging
+- [Join Room](/api/rooms/join) - Join a meeting room

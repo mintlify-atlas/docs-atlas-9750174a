@@ -1,0 +1,107 @@
+---
+title: Get Current User
+description: Retrieve the authenticated user's profile information
+---
+
+Get the profile information for the currently authenticated user based on their JWT token.
+
+## Endpoint
+
+```
+GET /auth/me
+```
+
+## Authentication
+
+Requires JWT authentication via Bearer token in the `Authorization` header.
+
+## Request
+
+No request body or parameters required. The user is identified from the JWT token.
+
+### Headers
+
+<ParamField header="Authorization" type="string" required>
+  Bearer token obtained from login or registration
+  
+  Format: `Bearer <jwt_token>`
+</ParamField>
+
+## Response
+
+Returns the authenticated user's profile information.
+
+<ResponseField name="id" type="string">
+  Unique user identifier (CUID)
+</ResponseField>
+
+<ResponseField name="email" type="string">
+  User's email address
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  User's full name
+</ResponseField>
+
+<ResponseField name="displayName" type="string">
+  User's display name (shown in meetings)
+</ResponseField>
+
+<ResponseField name="avatarUrl" type="string">
+  URL to user's avatar image (if set)
+</ResponseField>
+
+<ResponseField name="createdAt" type="string">
+  ISO 8601 timestamp of account creation
+</ResponseField>
+
+<ResponseField name="updatedAt" type="string">
+  ISO 8601 timestamp of last profile update
+</ResponseField>
+
+## Example Request
+
+```bash cURL
+curl -X GET https://api.neuronmeet.com/auth/me \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+
+## Example Response
+
+```json
+{
+  "id": "clh3x2k5g0001l408xyz12345",
+  "email": "alex@example.com",
+  "name": "Alex Johnson",
+  "displayName": "Alex J.",
+  "avatarUrl": "https://example.com/avatars/alex.jpg",
+  "createdAt": "2024-03-01T10:30:00.000Z",
+  "updatedAt": "2024-03-02T14:20:00.000Z"
+}
+```
+
+## Error Responses
+
+### 401 Unauthorized
+
+Missing or invalid JWT token.
+
+```json
+{
+  "statusCode": 401,
+  "message": "Unauthorized"
+}
+```
+
+## Use Cases
+
+- Display user profile in application header/sidebar
+- Verify authentication status on app load
+- Retrieve user information for client-side state management
+- Check user permissions and role
+
+## Related Endpoints
+
+- [Update User Profile](/api/users/update-profile) - Update profile information
+- [Login](/api/auth/login) - Authenticate and get JWT token
+- [Get User Profile](/api/users/get-profile) - Get any user's public profile
